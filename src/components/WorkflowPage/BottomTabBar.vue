@@ -40,7 +40,7 @@ const handleTabClick = (tab) => {
   position: fixed;
   bottom: 0;
   left: 80px;
-  right: 0;
+  right: 360px;
   height: 48px;
   background-color: #ffffff;
   border-top: 1px solid #e0e0e0;

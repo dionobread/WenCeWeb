@@ -42,7 +42,7 @@ const handleItemClick = (id) => {
   background-color: #2c3e50;
   position: fixed;
   left: 0;
-  top: 0;
+  top: 56px;
   display: flex;
   flex-direction: column;
   align-items: center;

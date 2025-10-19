@@ -1,7 +1,12 @@
 <template>
   <div class="app-container">
+    <!-- 顶部导航栏 -->
+    <TopBar />
+    
+    <!-- 左侧边栏 -->
     <LeftSidebar @item-change="handleSidebarChange" />
     
+    <!-- 主要内容区域 -->
     <div class="main-content">
       <h1>WenCe Platform</h1>
       <p>当前左边栏项: {{ currentSidebarItem || '未选择' }}</p>
@@ -13,14 +18,20 @@
       </div>
     </div>
     
+    <!-- 右侧聊天栏 -->
+    <ChatBar />
+    
+    <!-- 底部标签栏 -->
     <BottomTabBar @tab-change="handleTabChange" />
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue';
+import TopBar from './components/TopBar.vue';
 import LeftSidebar from './components/LeftSidebar.vue';
-import BottomTabBar from './components/BottomTabBar.vue';
+import ChatBar from './components/WorkflowPage/ChatBar.vue';
+import BottomTabBar from './components/WorkflowPage/BottomTabBar.vue';
 
 const currentSidebarItem = ref(null);
 const currentTab = ref('Overview');
@@ -44,8 +55,10 @@ const handleTabChange = (tab) => {
 
 .main-content {
   margin-left: 80px;
+  margin-top: 56px; /* 为 TopBar 留出空间 */
   margin-bottom: 48px;
   padding: 32px;
+  margin-right: 370px; /* 为 ChatBar 留出空间 */
 }
 
 .content-area {

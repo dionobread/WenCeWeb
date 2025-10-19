@@ -201,9 +201,9 @@ export default {
   width: 350px;
   top: 66px;
   right: 10px;
-  bottom: 10px;
+  bottom: 0px;
   background: #ffffff;
-  border-radius: 12px;
+  border-radius: 12px 12px 0px 0px; 
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   overflow: hidden; 
 }
