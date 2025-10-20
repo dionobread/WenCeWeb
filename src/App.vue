@@ -8,13 +8,19 @@
     
     <!-- 主要内容区域 -->
     <div class="main-content">
-      <h1>WenCe Platform</h1>
-      <p>当前左边栏项: {{ currentSidebarItem || '未选择' }}</p>
-      <p>当前标签页: {{ currentTab }}</p>
+      <!-- 根据当前标签页显示不同内容 -->
+      <WorkflowInstance v-if="currentTab === 'Workflow'" />
       
-      <div class="content-area">
-        <h2>主要内容区域</h2>
-        <p>根据当前选中的标签页显示不同内容</p>
+      <!-- 其他标签页的占位内容 -->
+      <div v-else class="content-area">
+        <h1>WenCe Platform</h1>
+        <p>当前左边栏项: {{ currentSidebarItem || '未选择' }}</p>
+        <p>当前标签页: {{ currentTab }}</p>
+        
+        <div class="placeholder-content">
+          <h2>{{ currentTab }} 内容区域</h2>
+          <p>此标签页的内容正在开发中...</p>
+        </div>
       </div>
     </div>
     
@@ -22,7 +28,7 @@
     <ChatBar />
     
     <!-- 底部标签栏 -->
-    <BottomTabBar @tab-change="handleTabChange" />
+    <BottomPanel @tab-change="handleBottomTabChange" />
   </div>
 </template>
 
@@ -31,19 +37,19 @@ import { ref } from 'vue';
 import TopBar from './components/TopBar.vue';
 import LeftSidebar from './components/LeftSidebar.vue';
 import ChatBar from './components/WorkflowPage/ChatBar.vue';
-import BottomTabBar from './components/WorkflowPage/BottomTabBar.vue';
+import BottomPanel from './components/WorkflowPage/BottomPanel.vue';
+import WorkflowInstance from './components/WorkflowPage/WorkflowInstance.vue';
 
 const currentSidebarItem = ref(null);
-const currentTab = ref('Overview');
+const currentTab = ref('Workflow');
 
 const handleSidebarChange = (id) => {
   currentSidebarItem.value = id;
   console.log('切换到左边栏项:', id);
 };
 
-const handleTabChange = (tab) => {
-  currentTab.value = tab;
-  console.log('切换到标签页:', tab);
+const handleBottomTabChange = (tab) => {
+  console.log('切换到底部标签页:', tab);
 };
 </script>
 
@@ -55,18 +61,36 @@ const handleTabChange = (tab) => {
 
 .main-content {
   margin-left: 80px;
-  margin-top: 56px; /* 为 TopBar 留出空间 */
+  margin-top: 56px;
   margin-bottom: 48px;
-  padding: 32px;
-  margin-right: 370px; /* 为 ChatBar 留出空间 */
+  margin-right: 370px;
+  padding: 0;
+  min-height: calc(100vh - 104px);
 }
 
 .content-area {
-  margin-top: 24px;
+  padding: 32px;
   background-color: white;
   border-radius: 8px;
-  padding: 24px;
+  margin: 24px;
   min-height: 400px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.placeholder-content {
+  margin-top: 24px;
+  padding: 48px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.placeholder-content h2 {
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.placeholder-content p {
+  color: #6b7280;
 }
 </style>
