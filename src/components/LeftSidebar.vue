@@ -37,7 +37,7 @@ const handleItemClick = (id) => {
 
 <style scoped>
 .left-sidebar {
-  width: 80px;
+  width: 60px;
   height: 100vh;
   background-color: #2c3e50;
   position: fixed;

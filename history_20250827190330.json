@@ -1,0 +1,270 @@
+[
+    {
+        "role": "system",
+        "content": "You are a helpful assistant. We have provided you with many tools that you can use when solving problems. They will help you complete tasks better. If you use web_search to query the content on the Internet and reply based on this content, you must provide the reference website address in your response. The website address can be embedded within the text. Please do not lose the user's question information when using the tool,and try to maintain the completeness of the question content as much as possible. Your response should mainly be in Chinese. When you solve medical problems, you must fully understand the patient's intentions. 随后使用info_inquire工具继续向患者询问患情，以便更好地了解用户的状况。注意，info_inquire工具调用不能超过5次。 Then carefully break down and plan the tasks, then use feedback  tool to evaluate the previous behavior. And check at any time whether any procedures need to be modified during the diagnosis process. 在任何时候如果你想要向用户询问更多的东西，请使用info_inquire中的问答题形式来询问。 通常在任务规划后，需要从头开始向患者询问各个检查的结果。询问到结果后，你需要使用feedback工具再评估这个检查之后的那些检查是否需要调整，是否需要更改优先级，是否需要新增一些检查，或者删掉一些检查。你必须利用当前的工具去回复，不要自行回答。 你的回复必须使用工具！在规划或者反馈后，你需要用info_inquire中的问答题形式来依次向患者要各个任务的结果，如果已经有结果了则不需要询问，每次只能问一个任务的结果。"
+    },
+    {
+        "role": "user",
+        "content": "口腔伴有异味"
+    },
+    {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+            {
+                "id": "call_FzrnohOiqEjHYfklAu2MXAvc",
+                "function": {
+                    "arguments": "{}",
+                    "name": "intent_understand"
+                },
+                "type": "function"
+            }
+        ],
+        "annotations": []
+    },
+    {
+        "role": "tool",
+        "content": "用户意图为症状查询：用户描述了口腔伴有异味的症状，想了解可能的原因、严重性或应对措施。",
+        "tool_call_id": "call_FzrnohOiqEjHYfklAu2MXAvc"
+    },
+    {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+            {
+                "id": "call_iJHB9VlgSxikDSabSpezkNcE",
+                "function": {
+                    "arguments": "{}",
+                    "name": "info_inquire"
+                },
+                "type": "function"
+            }
+        ],
+        "annotations": []
+    },
+    {
+        "role": "tool",
+        "content": "```json\n{\n    \"questions\": [\n        {\n            \"type\": \"single_choice\",\n            \"question\": \"口腔异味的性质是怎样的？\",\n            \"options\": [\"酸味\", \"苦味\", \"臭味\", \"其他\"],\n            \"required\": true\n        },\n        {\n            \"type\": \"judge\",\n            \"question\": \"是否伴随口腔其他症状，如疼痛或出血？\",\n            \"options\": [\"是\", \"否\"],\n            \"required\": true\n        },\n        {\n            \"type\": \"open_ended\",\n            \"question\": \"请描述异味开始的具体时间和变化过程。\",\n            \"options\": [],\n            \"required\": true\n        }\n    ]\n}\n```",
+        "tool_call_id": "call_iJHB9VlgSxikDSabSpezkNcE"
+    },
+    {
+        "role": "assistant",
+        "content": "问题 1: 口腔异味的性质是怎样的？ (必答)\n类型: 单选题\n选项:\n  1. 酸味\n  2. 苦味\n  3. 臭味\n  4. 其他"
+    },
+    {
+        "role": "user",
+        "content": "3"
+    },
+    {
+        "role": "assistant",
+        "content": "问题 2: 是否伴随口腔其他症状，如疼痛或出血？ (必答)\n类型: 判断题\n选项: 1. 是 2. 否"
+    },
+    {
+        "role": "user",
+        "content": "2"
+    },
+    {
+        "role": "assistant",
+        "content": "问题 3: 请描述异味开始的具体时间和变化过程。 (必答)\n类型: 开放题"
+    },
+    {
+        "role": "user",
+        "content": "一周前，无变化"
+    },
+    {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+            {
+                "id": "call_P4dzdWeQ3ANsjjUvI1g6WVzR",
+                "function": {
+                    "arguments": "{}",
+                    "name": "task_decomposition"
+                },
+                "type": "function"
+            }
+        ],
+        "annotations": []
+    },
+    {
+        "role": "tool",
+        "content": "根据您描述的情况，我将按照SOAP框架为您制定一个可执行的临床路径：\n\n### 任务1：评估口腔异味症状\n- **子任务1**：记录详细病史\n  - 内容：询问患者口腔卫生习惯（如刷牙、使用牙线等），是否有服用药物，是否有食用特殊食物（如大蒜、洋葱等），是否吸烟或饮酒等。\n  - 预期结果：完整的口腔卫生和生活习惯记录。\n  \n- **子任务2**：口腔检查\n  - 内容：进行口腔内部检查，观察牙龈、舌头、口腔黏膜的状态。\n  - 预期结果：记录检查结果，包括牙齿状况（是否有龋齿、牙石等），舌苔（是否厚，颜色等），口腔黏膜有无病理改变。\n\n### 任务2：初步诊断和处理建议\n- **子任务1**：评估可能的病因\n  - 内容：根据记录的病史和检查结果，综合考虑如口腔卫生不良、牙周病、消化系统问题（如胃食管反流）等。\n  - 预期结果：确定潜在病因的优先级，提出可能的临床诊断。\n\n- **子任务2**：制定处理方案\n  - 内容：根据评估结果，建议患者改进口腔卫生习惯（如更频繁刷牙、使用漱口水等），并考虑是否需要就医（如牙科检查）。\n  - 预期结果：患者理解改进口腔卫生的措施，并能采取行动。\n\n### 任务3：随访评估\n- **子任务1**：安排后续随访\n  - 内容：建议患者一周后回访，评估口腔异味是否改善。\n  - 预期结果：确定具体的随访时间，查看效果。\n\n请您按照这些任务进行，完成后再反馈检查和执行结果，我们可以继续调整方案。",
+        "tool_call_id": "call_P4dzdWeQ3ANsjjUvI1g6WVzR"
+    },
+    {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+            {
+                "id": "call_uEzu5UNIyujk5Elc3MqgqGkD",
+                "function": {
+                    "arguments": "{}",
+                    "name": "planning"
+                },
+                "type": "function"
+            }
+        ],
+        "annotations": []
+    },
+    {
+        "role": "tool",
+        "content": "```mermaid\ngraph TD;\n    A[收集病史] --> B[口腔检查]\n    B --> C[初步诊断]\n    C --> D[制定处理方案]\n    D --> E[安排随访]\n```\n\n### 任务执行计划说明：\n\n1. **确定执行路径**：\n   - 收集病史是第一步，了解患者的口腔卫生习惯、有无用药、饮食习惯等，这是后续判断的基础。\n   - 其次进行口腔检查，通过观察判断可能的病因。\n   - 在完成病史和体检后进行初步诊断，确定可能的原因。\n   - 根据诊断结果制定处理方案给出具体的建议。\n   - 安排随访以评估口腔异味是否改善。\n\n2. **风险评估**：\n   - **高风险任务**：口腔检查，口腔相关问题如严重牙周病可能导致系统性健康问题。因此在变味早期需要及时处理，避免病情加重，尽早接触牙科专业人士进行评估。\n\n通过这种方法，可以有序地收集信息，分析病因并制定合理的处理方案，同时注意潜在的健康风险。这样不仅能提高医疗效率，也保证了患者的安全。",
+        "tool_call_id": "call_uEzu5UNIyujk5Elc3MqgqGkD"
+    },
+    {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+            {
+                "id": "call_KGNALOIUMGTgqv1z02BMTFGR",
+                "function": {
+                    "arguments": "{}",
+                    "name": "info_inquire"
+                },
+                "type": "function"
+            }
+        ],
+        "annotations": []
+    },
+    {
+        "role": "tool",
+        "content": "```json\n{\n    \"questions\": [\n        {\n            \"type\": \"single_choice\",\n            \"question\": \"您的年龄是多少？\",\n            \"options\": [\"18岁以下\", \"18-35岁\", \"36-50岁\", \"51岁以上\"],\n            \"required\": true\n        },\n        {\n            \"type\": \"judge\",\n            \"question\": \"是否正在服用任何药物？\",\n            \"options\": [\"是\", \"否\"],\n            \"required\": true\n        },\n        {\n            \"type\": \"multiple_choice\",\n            \"question\": \"除了口腔异味外，您是否有其他相关症状？\",\n            \"options\": [\"口干\", \"喉咙痛\", \"消化不良\", \"牙龈出血\", \"没有其他症状\"],\n            \"required\": false\n        }\n    ]\n}\n```",
+        "tool_call_id": "call_KGNALOIUMGTgqv1z02BMTFGR"
+    },
+    {
+        "role": "assistant",
+        "content": "问题 1: 您的年龄是多少？ (必答)\n类型: 单选题\n选项:\n  1. 18岁以下\n  2. 18-35岁\n  3. 36-50岁\n  4. 51岁以上"
+    },
+    {
+        "role": "user",
+        "content": "1"
+    },
+    {
+        "role": "assistant",
+        "content": "问题 2: 是否正在服用任何药物？ (必答)\n类型: 判断题\n选项: 1. 是 2. 否"
+    },
+    {
+        "role": "user",
+        "content": "2"
+    },
+    {
+        "role": "assistant",
+        "content": "问题 3: 除了口腔异味外，您是否有其他相关症状？\n类型: 多选题\n选项:\n  1. 口干\n  2. 喉咙痛\n  3. 消化不良\n  4. 牙龈出血\n  5. 没有其他症状"
+    },
+    {
+        "role": "user",
+        "content": "5"
+    },
+    {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+            {
+                "id": "call_grNM2bZSitvMIgC6C2z5wccN",
+                "function": {
+                    "arguments": "{}",
+                    "name": "feedback"
+                },
+                "type": "function"
+            }
+        ],
+        "annotations": []
+    },
+    {
+        "role": "tool",
+        "content": "### 反馈评估报告\n\n#### 1. 检查合理性评估\n- **已完成的检查是否足够支持诊断**：目前的计划包括收集病史和进行口腔检查，这些步骤是足够基础的，有助于初步诊断。\n- **是否有冗余检查可以取消**：没有发现当前检查有冗余的情况，所有检查均为必要。\n- **是否需要补充新的检查项目**：建议在口腔检查后根据检查结果，考虑是否需要进行口腔X光或其他相关检查。\n\n#### 2. 诊断路径评估\n- **当前任务分解是否覆盖所有关键环节**：任务分解合理，涵盖了病史采集、口腔检查、初步诊断、处理方案制定和随访评估等关键环节。\n- **是否存在诊断盲区或遗漏**：目前未发现关键盲区，但后续随访时需要关注症状变化。\n- **是否需要调整临床路径**：根据反馈，目前的临床路径无需调整，保持现有计划即可。\n\n#### 3. 执行障碍反馈\n- **遇到的执行困难**：目前未报告遇到重大执行困难，但需留意患者的后续反馈。\n- **资源限制问题**：若需进一步检查，如X光，需要提前安排检查资源。\n- **时间延误情况**：患者随访安排应在1周内，以确保及时评估症状变化。\n\n### 修改后的执行路径\n\n```mermaid\ngraph TD;\n    A[收集病史] --> B[口腔检查]\n    B --> C[初步诊断]\n    C --> D[制定处理方案]\n    D --> E[安排随访]\n```\n\n您可以按此路径继续进行相关任务。请在进行口腔检查后，反馈检查结果，以便我们基于结果进行下一步评估。",
+        "tool_call_id": "call_grNM2bZSitvMIgC6C2z5wccN"
+    },
+    {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+            {
+                "id": "call_70hTLMLF8KQ1S8mQB7gFuJah",
+                "function": {
+                    "arguments": "{}",
+                    "name": "info_inquire"
+                },
+                "type": "function"
+            }
+        ],
+        "annotations": []
+    },
+    {
+        "role": "tool",
+        "content": "```json\n{\n    \"questions\": [\n        {\n            \"type\": \"single_choice\",\n            \"question\": \"口腔异味是在什么情况下最明显？\",\n            \"options\": [\"早晨起床时\", \"进食后\", \"晚上睡觉前\", \"没有特定情况\"],\n            \"required\": true\n        },\n        {\n            \"type\": \"judge\",\n            \"question\": \"您之前是否有过类似的口腔异味情况？\",\n            \"options\": [\"是\", \"否\"],\n            \"required\": true\n        },\n        {\n            \"type\": \"open_ended\",\n            \"question\": \"请详细描述您的口腔卫生习惯，包括刷牙频率和方法。\",\n            \"options\": [],\n            \"required\": true\n        }\n    ]\n}\n```",
+        "tool_call_id": "call_70hTLMLF8KQ1S8mQB7gFuJah"
+    },
+    {
+        "role": "assistant",
+        "content": "问题 1: 口腔异味是在什么情况下最明显？ (必答)\n类型: 单选题\n选项:\n  1. 早晨起床时\n  2. 进食后\n  3. 晚上睡觉前\n  4. 没有特定情况"
+    },
+    {
+        "role": "user",
+        "content": "1"
+    },
+    {
+        "role": "assistant",
+        "content": "问题 2: 您之前是否有过类似的口腔异味情况？ (必答)\n类型: 判断题\n选项: 1. 是 2. 否"
+    },
+    {
+        "role": "user",
+        "content": "2"
+    },
+    {
+        "role": "assistant",
+        "content": "问题 3: 请详细描述您的口腔卫生习惯，包括刷牙频率和方法。 (必答)\n类型: 开放题"
+    },
+    {
+        "role": "user",
+        "content": "每天刷牙"
+    },
+    {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+            {
+                "id": "call_P7y18oiv0LoHi2p3vWxzLqeK",
+                "function": {
+                    "arguments": "{}",
+                    "name": "finish"
+                },
+                "type": "function"
+            }
+        ],
+        "annotations": []
+    },
+    {
+        "role": "tool",
+        "content": "Finish",
+        "tool_call_id": "call_P7y18oiv0LoHi2p3vWxzLqeK"
+    },
+    {
+        "role": "assistant",
+        "content": "感谢您提供的信息。我们现在已经收集了全面的病史和相关症状。根据您的反馈，我们建议：\n\n1. **继续保持良好的口腔卫生习惯**：每天刷牙是良好的习惯，同时建议使用牙线来清洁牙缝，并考虑使用抗菌漱口水来帮助减少口腔异味。\n   \n2. **注意饮食**：尽量避免刺激性食物，如果您近期有吃特别强烈的食物（例如大蒜、洋葱等），可以观察是否与口腔异味有关。\n\n3. **定期检查**：如果口腔异味持续不改善，建议就医进行口腔科检查，以确认是否有牙周病、龋齿等口腔健康问题。\n\n4. **后续随访**：如症状未改善，请在一周后联系医生进一步评估。\n\n如果您还有其他的问题或需要进一步的帮助，请随时问我！"
+    }
+]

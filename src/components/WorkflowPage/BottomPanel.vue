@@ -302,15 +302,15 @@ const handleTabClick = (tab) => {
 .bottom-panel-container {
   position: fixed;
   bottom: 0;
-  left: 80px;
-  right: 360px;
+  left: 60px;
+  right: 310px;
   display: flex;
   flex-direction: column;
   z-index: 99;
 }
 
 .bottom-tabbar {
-  height: 48px;
+  height: 40px;
   background-color: #ffffff;
   border-top: 1px solid #e0e0e0;
   display: flex;
@@ -350,7 +350,7 @@ const handleTabClick = (tab) => {
 }
 
 .content-panel {
-  height: 300px;
+  height: 150px;
   background-color: #f3f0ff;
   color: #1a1a1a;
   overflow: auto;
