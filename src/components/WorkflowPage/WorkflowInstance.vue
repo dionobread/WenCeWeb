@@ -81,6 +81,17 @@
           <div class="status-badge" :class="`status-${task.status}`">
             {{ getStatusText(task.status) }}
           </div>
+          
+          <!-- 显示子任务 -->
+          <div v-if="task.subtasks && task.subtasks.length > 0" class="subtasks-list">
+            <div
+              v-for="subtask in task.subtasks"
+              :key="subtask.subtask_id"
+              class="subtask-item"
+            >
+              <span class="subtask-name">{{ subtask.subtask_name }}</span>
+            </div>
+          </div>
         </div>
       </div>
       
@@ -96,61 +107,42 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 
-// 模拟数据
-const workflowData = [
-  {
-    id: 1,
-    name: '收集病史',
-    subTasks: [
-      { id: '1-1', name: '基础信息核查', status: 'pending' },
-      { id: '1-2', name: '主诉精准问询', status: 'pending' },
-      { id: '1-3', name: '现病史详细追溯', status: 'pending' },
-      { id: '1-4', name: '既往史与家族史收集', status: 'pending' }
-    ]
-  },
-  {
-    id: 2,
-    name: '口腔检查',
-    subTasks: [
-      { id: '2-1', name: '常规口腔视诊与触诊', status: 'pending' },
-      { id: '2-2', name: '专项器械检查', status: 'pending' },
-      { id: '2-3', name: '辅助检查安排', status: 'pending' }
-    ]
-  },
-  {
-    id: 3,
-    name: '初步诊断',
-    subTasks: [
-      { id: '3-1', name: '信息整合分析', status: 'pending' },
-      { id: '3-2', name: '鉴别诊断排除', status: 'pending' },
-      { id: '3-3', name: '初步诊断结论形成', status: 'pending' }
-    ]
-  },
-  {
-    id: 4,
-    name: '制定处理方案',
-    subTasks: [
-      { id: '4-1', name: '治疗目标确立', status: 'pending' },
-      { id: '4-2', name: '具体治疗方案制定', status: 'pending' },
-      { id: '4-3', name: '治疗风险与注意事项告知', status: 'pending' }
-    ]
-  },
-  {
-    id: 5,
-    name: '安排随访',
-    subTasks: [
-      { id: '5-1', name: '随访时间规划', status: 'pending' },
-      { id: '5-2', name: '随访方式与内容明确', status: 'pending' },
-      { id: '5-3', name: '随访记录与档案管理', status: 'pending' }
-    ]
+const props = defineProps({
+  workflowData: {
+    type: Object,
+    default: null
   }
-];
+});
 
 const selectedWorkflow = ref(null);
-const workflows = ref(JSON.parse(JSON.stringify(workflowData)));
+const workflows = ref([]);
 const isExecuting = ref(false);
+
+// 监听 workflowData 的变化，转换为内部格式
+watch(() => props.workflowData, (newData) => {
+  if (newData && newData.tasks) {
+    workflows.value = newData.tasks.map((task, index) => ({
+      id: index + 1,
+      name: task.task_name,
+      description: task.task_description,
+      priority: task.priority,
+      subTasks: (task.subtasks || []).map(subtask => ({
+        id: subtask.subtask_id,
+        name: subtask.subtask_name,
+        description: subtask.subtask_description,
+        status: 'pending',
+        subtasks: subtask.subtasks || []
+      }))
+    }));
+    
+    // 自动选择第一个工作流
+    if (workflows.value.length > 0 && !selectedWorkflow.value) {
+      selectedWorkflow.value = workflows.value[0];
+    }
+  }
+}, { immediate: true, deep: true });
 
 // 获取当前选中工作流的子任务
 const currentSubTasks = computed(() => {
@@ -457,6 +449,7 @@ const getStatusText = (status) => {
   font-weight: 500;
   padding: 4px 8px;
   border-radius: 9999px;
+  margin-bottom: 8px;
 }
 
 .status-running {
@@ -472,6 +465,25 @@ const getStatusText = (status) => {
 .status-pending {
   background-color: #f3f4f6;
   color: #4b5563;
+}
+
+.subtasks-list {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.subtask-item {
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  background-color: #f9fafb;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.subtask-name {
+  display: block;
 }
 
 .instance-empty {

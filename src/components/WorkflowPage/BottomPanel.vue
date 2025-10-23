@@ -15,13 +15,24 @@
 
     <!-- 底部内容面板 -->
     <div class="content-panel">
-      <div v-if="currentData" class="json-display">
+      <div v-if="currentData && currentData.length > 0" class="json-display">
         <div
-          v-for="(line, index) in formattedJson"
+          v-for="(item, index) in currentData"
           :key="index"
-          class="json-line"
-          v-html="line"
-        ></div>
+          class="data-entry"
+        >
+          <div class="entry-header">
+            <span class="tool-name">{{ item.tool_name || 'Data' }}</span>
+            <span class="timestamp">{{ formatTime(item.timestamp) }}</span>
+          </div>
+          <div
+            v-for="(line, lineIndex) in formatDataOutput(item)"
+            :key="lineIndex"
+            class="json-line"
+            v-html="line"
+          ></div>
+          <div v-if="index < currentData.length - 1" class="entry-divider"></div>
+        </div>
       </div>
       <div v-else class="empty-state">
         {{ activeTab }} 数据暂无内容
@@ -32,6 +43,13 @@
 
 <script setup>
 import { ref, computed } from 'vue';
+
+const props = defineProps({
+  bottomPanelData: {
+    type: Object,
+    required: true
+  }
+});
 
 const emit = defineEmits(['tab-change']);
 
@@ -47,209 +65,19 @@ const tabs = [
   'User Proxy'
 ];
 
-// 模拟数据
-const mockData = {
-  Intent: {
-    query: "口腔伴有异味",
-    user_intent: "症状查询：用户描述了口腔伴有异味的症状，想了解可能的原因、严重性或应对措施。",
-    task_type: "Information-seeking intent",
-    intents_list: [
-      "寻求病因解释",
-      "查询治疗方法",
-      "了解是否需要就医"
-    ],
-    confidence_score: 0.92
-  },
-  
-  Decomposer: {
-    main_task: "口腔异味诊断与处理",
-    subtasks: [
-      {
-        id: 1,
-        name: "评估口腔异味症状",
-        description: "记录详细病史和进行口腔检查",
-        subtasks: [
-          {
-            id: "1.1",
-            name: "记录详细病史",
-            content: "询问患者口腔卫生习惯、是否有服用药物、是否有食用特殊食物等",
-            expected_result: "完整的口腔卫生和生活习惯记录"
-          },
-          {
-            id: "1.2",
-            name: "口腔检查",
-            content: "进行口腔内部检查，观察牙龈、舌头、口腔黏膜的状态",
-            expected_result: "记录检查结果，包括牙齿状况、舌苔、口腔黏膜有无病理改变"
-          }
-        ]
-      },
-      {
-        id: 2,
-        name: "初步诊断和处理建议",
-        description: "评估可能的病因并制定处理方案",
-        subtasks: [
-          {
-            id: "2.1",
-            name: "评估可能的病因",
-            content: "根据记录的病史和检查结果，综合考虑如口腔卫生不良、牙周病、消化系统问题等",
-            expected_result: "确定潜在病因的优先级，提出可能的临床诊断"
-          },
-          {
-            id: "2.2",
-            name: "制定处理方案",
-            content: "根据评估结果，建议患者改进口腔卫生习惯，并考虑是否需要就医",
-            expected_result: "患者理解改进口腔卫生的措施，并能采取行动"
-          }
-        ]
-      },
-      {
-        id: 3,
-        name: "随访评估",
-        description: "安排后续随访，评估口腔异味是否改善",
-        subtasks: [
-          {
-            id: "3.1",
-            name: "安排后续随访",
-            content: "建议患者一周后回访，评估口腔异味是否改善",
-            expected_result: "确定具体的随访时间，查看效果"
-          }
-        ]
-      }
-    ]
-  },
-  
-  Planner: {
-    execution_path: {
-      steps: [
-        { id: "A", name: "收集病史", status: "completed" },
-        { id: "B", name: "口腔检查", status: "in_progress" },
-        { id: "C", name: "初步诊断", status: "pending" },
-        { id: "D", name: "制定处理方案", status: "pending" },
-        { id: "E", name: "安排随访", status: "pending" }
-      ],
-      dependencies: {
-        "B": ["A"],
-        "C": ["B"],
-        "D": ["C"],
-        "E": ["D"]
-      }
-    },
-    risk_assessment: {
-      high_risk_tasks: [
-        {
-          task_id: "B",
-          task_name: "口腔检查",
-          risk_description: "口腔相关问题如严重牙周病可能导致系统性健康问题。因此在嘴味早期需要及时处理，避免病情加重，尽早接触牙科专业人士进行评估。",
-          mitigation: "及时转诊至专业牙科医生"
-        }
-      ]
-    },
-    estimated_duration: "1-2周",
-    priority_level: "medium"
-  },
-  
-  Executor: {
-    current_execution: {
-      task_id: "B",
-      task_name: "口腔检查",
-      status: "executing",
-      start_time: "2023-08-27 19:03:30",
-      tools_used: ["info_inquire"],
-      results: [
-        {
-          question: "口腔异味的性质是怎样的？",
-          answer: "臭味",
-          timestamp: "2023-08-27 19:05:12"
-        },
-        {
-          question: "是否伴随口腔其他症状，如疼痛或出血？",
-          answer: "否",
-          timestamp: "2023-08-27 19:05:45"
-        },
-        {
-          question: "请描述异味开始的具体时间和变化过程。",
-          answer: "一周前，无变化",
-          timestamp: "2023-08-27 19:06:18"
-        }
-      ]
-    },
-    execution_history: [
-      {
-        task_id: "A",
-        task_name: "收集病史",
-        status: "completed",
-        duration: "5分钟",
-        tools_used: ["intent_understand", "info_inquire"],
-        summary: "成功收集患者基本信息和症状描述"
-      }
-    ]
-  },
-  
-  Synthesizer: {
-    diagnosis_summary: {
-      patient_info: {
-        age_group: "18岁以下",
-        chief_complaint: "口腔伴有异味",
-        duration: "一周",
-        characteristics: "臭味，早晨起床时最明显"
-      },
-      findings: {
-        symptoms: ["口腔异味（臭味）"],
-        no_symptoms: ["无疼痛", "无出血", "无其他相关症状"],
-        oral_hygiene: "每天刷牙",
-        medication: "无"
-      },
-      preliminary_diagnosis: [
-        {
-          condition: "口腔卫生不良导致的口臭",
-          probability: "high",
-          reasoning: "患者虽然每天刷牙，但可能刷牙方法不当或未使用牙线，导致食物残渣残留"
-        },
-        {
-          condition: "舌苔过厚",
-          probability: "medium",
-          reasoning: "早晨起床时异味最明显，提示可能与夜间口腔细菌繁殖有关"
-        }
-      ],
-      recommendations: [
-        "改进口腔卫生习惯，建议使用牙线和抗菌漱口水",
-        "注意饮食，避免刺激性食物",
-        "如症状持续不改善，建议就医进行口腔科检查",
-        "一周后随访评估"
-      ],
-      confidence_level: 0.78
-    }
-  },
-  
-  Overview: {
-    workflow_status: {
-      workflow_id: "WF-20230827-001",
-      patient_query: "口腔伴有异味",
-      start_time: "2023-08-27 19:03:30",
-      current_stage: "Executor",
-      progress: 0.6,
-      stages_completed: ["Intent", "Decomposer", "Planner"],
-      stages_in_progress: ["Executor"],
-      stages_pending: ["Synthesizer", "User Proxy"]
-    },
-    key_metrics: {
-      total_questions_asked: 6,
-      tools_invoked: 5,
-      avg_response_time: "2.3秒",
-      user_satisfaction: null
-    },
-    timeline: [
-      { stage: "Intent", time: "19:03:30", duration: "15秒" },
-      { stage: "Decomposer", time: "19:03:45", duration: "8秒" },
-      { stage: "Planner", time: "19:03:53", duration: "12秒" },
-      { stage: "Executor", time: "19:04:05", duration: "进行中..." }
-    ]
-  }
-};
-
 const currentData = computed(() => {
-  return mockData[activeTab.value] || null;
+  return props.bottomPanelData[activeTab.value] || [];
 });
+
+const formatTime = (timestamp) => {
+  if (!timestamp) return '';
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+};
 
 const formatJson = (obj) => {
   return JSON.stringify(obj, null, 2);
@@ -285,12 +113,21 @@ const highlightJson = (jsonString) => {
   return result;
 };
 
-const formattedJson = computed(() => {
-  if (!currentData.value) return [];
+const formatDataOutput = (item) => {
+  let output = '';
   
-  const jsonString = formatJson(currentData.value);
-  return jsonString.split('\n').map(line => highlightJson(line));
-});
+  if (item.tool_output) {
+    output = item.tool_output;
+  } else if (item.parsed_data) {
+    output = formatJson(item.parsed_data);
+  } else if (item.parsed_items) {
+    output = formatJson(item.parsed_items);
+  } else {
+    output = formatJson(item);
+  }
+  
+  return output.split('\n').map(line => highlightJson(line));
+};
 
 const handleTabClick = (tab) => {
   activeTab.value = tab;
@@ -350,7 +187,7 @@ const handleTabClick = (tab) => {
 }
 
 .content-panel {
-  height: 150px;
+  height: 200px;
   background-color: #f3f0ff;
   color: #1a1a1a;
   overflow: auto;
@@ -364,8 +201,38 @@ const handleTabClick = (tab) => {
   white-space: pre;
 }
 
+.data-entry {
+  margin-bottom: 16px;
+}
+
+.entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #d8b4fe;
+}
+
+.tool-name {
+  font-weight: 600;
+  color: #6b46c1;
+  font-size: 14px;
+}
+
+.timestamp {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
 .json-line {
   min-height: 20px;
+}
+
+.entry-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, #d8b4fe, transparent);
+  margin: 16px 0;
 }
 
 .empty-state {

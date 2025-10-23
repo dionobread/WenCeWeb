@@ -65,7 +65,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 // 定义组件名称
 defineOptions({
@@ -87,6 +87,12 @@ const emit = defineEmits(['update', 'details', 'reject', 'confirm']);
 
 const items = ref([...props.initialItems]);
 const newItem = ref('');
+
+// 监听 props.initialItems 的变化
+watch(() => props.initialItems, (newItems) => {
+  console.log(`[Node ${props.title}] initialItems 更新:`, newItems);
+  items.value = [...newItems];
+}, { deep: true });
 
 const deleteItem = (index) => {
   items.value.splice(index, 1);

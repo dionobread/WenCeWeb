@@ -45,7 +45,11 @@
             <path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/>
           </svg>
         </div>
-        <div class="typing-indicator"></div>
+        <div class="typing-indicator">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
       </div>
 
     </div>
@@ -101,14 +105,14 @@ import { chatAPI } from '../../services/api.js';
 
 export default {
   name: "SideChatDialog",
-  emits: ['new-message'], // 声明发出的事件
+  emits: ['new-message'],
   data() {
     return {
       messages: [],
       inputMessage: "",
       selectedModel: "gpt-3.5-turbo",
       isLoading: false,
-      wsConnection: null, // WebSocket连接
+      wsConnection: null,
       availableModels: [
         { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" },
         { value: "gpt-4", label: "GPT-4" },
@@ -127,13 +131,12 @@ export default {
     }
   },
   updated() {
-    this.scrollToBottom(); // 每次数据更新后聊天框滚动到底部
+    this.scrollToBottom();
   },
   methods: {
     async sendMessage() {
       if (!this.inputMessage.trim() || this.isLoading) return;
 
-      // 添加用户消息
       const userMessage = {
         role: "user",
         content: this.inputMessage.trim(),
@@ -141,22 +144,18 @@ export default {
       };
       this.messages.push(userMessage);
 
-      // 清空输入框
       const message = this.inputMessage;
       this.inputMessage = "";
       this.adjustTextareaHeight();
 
-      // 通过WebSocket发送消息
       this.sendViaWebSocket(message);
     },
 
     sendViaWebSocket(message) {
       this.isLoading = true;
 
-      // 如果连接已关闭，重新连接
       if (!this.wsConnection || this.wsConnection.readyState === WebSocket.CLOSED) {
         this.initWebSocket();
-        // 等待连接建立
         setTimeout(() => {
           if (this.wsConnection.readyState === WebSocket.OPEN) {
             this.wsConnection.send(message);
@@ -175,11 +174,10 @@ export default {
     },
 
     handleEnterKey(event) {
-      // 如果按了 Shift + Enter，允许换行
       if (event.shiftKey) {
         return;
       } else {
-        this.sendMessage(); // 如果只按了 Enter，发送消息
+        this.sendMessage();
       }
     },
 
@@ -217,27 +215,39 @@ export default {
       };
 
       if (typeof data === 'object' && data.tool_info) {
-        // 处理工具调用消息
+        const toolName = data.tool_info.tool_name;
+        
+        console.log(`[ChatBar] 处理工具消息: ${toolName}`);
+        
+        // 只有 system 和 info_inquire 的消息才显示在 ChatBar
+        if (toolName === 'system' || toolName === 'info_inquire') {
+          message.content = data.tool_info.tool_output;
+          message.toolInfo = data.tool_info;
+          message.metadata = data.metadata;
+          return message;
+        }
+        
+        // 其他工具的消息不在 ChatBar 显示，但仍然触发事件
         message.content = data.tool_info.tool_output;
         message.toolInfo = data.tool_info;
         message.metadata = data.metadata;
         
+        console.log(`[ChatBar] ${toolName} 消息不显示在聊天框，但触发事件`);
+        console.log(`[ChatBar] toolInfo:`, message.toolInfo);
+        
+        // 发出事件但不添加到 messages
+        this.$emit('new-message', message);
+        return null;
+        
       } else if (typeof data === 'object') {
-        // 其他JSON对象
         message.content = JSON.stringify(data, null, 2);
       } else {
-        // 纯文本
         message.content = data;
       }
 
-      // 发出新消息事件
-      this.$emit('new-message', message);
-
       return message;
     },
-    /**
-     * 初始化WebSocket连接
-     */
+
     initWebSocket() {
       try {
         console.log('[Info] 初始化WebSocket连接...');
@@ -251,12 +261,23 @@ export default {
           try {
             const data = JSON.parse(event.data);
             const message = this.processAssistantMessage(data);
-            this.messages.push(message);
-            // 额外触发事件，确保所有消息都被传递
-            this.$emit('new-message', message);
+            
+            // 只有返回的 message 不为 null 才添加到聊天记录
+            if (message) {
+              this.messages.push(message);
+            }
+            
+            // 无论是否显示在 ChatBar，都发出事件
+            this.$emit('new-message', message || {
+              role: "assistant",
+              content: data.tool_info?.tool_output || '',
+              timestamp: new Date(),
+              toolInfo: data.tool_info,
+              metadata: data.metadata,
+              type: "normal"
+            });
 
           } catch {
-            // 如果不是JSON，直接显示
             const message = {
               role: "assistant",
               content: event.data,
