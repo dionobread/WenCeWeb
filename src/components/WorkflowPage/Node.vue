@@ -65,7 +65,7 @@
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits } from 'vue';
+import { ref } from 'vue';
 
 // 定义组件名称
 defineOptions({

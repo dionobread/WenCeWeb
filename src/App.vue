@@ -233,7 +233,7 @@ const confirmNode = (nodeData) => {
   display: flex;
   flex-direction: row;
   gap: 20px;
-  min-width: 600px; /* 两个 node 的最小宽度 */
+  min-width: 50px; /* 两个 node 的最小宽度 */
   max-width: 800px;
   flex-shrink: 0;
 }
