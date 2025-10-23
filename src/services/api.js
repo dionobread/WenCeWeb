@@ -36,8 +36,19 @@ export const chatAPI = {
     // 接收消息
     ws.onmessage = (event) => {
       console.log('[Info] 消息返回：', event.data);
-      if (onMessage) {
-        onMessage(event.data);
+      
+      try {
+        // 尝试解析JSON
+        const data = JSON.parse(event.data);
+        if (onMessage) {
+          onMessage(data);
+        }
+      } catch (error) {
+        // 如果不是JSON，直接使用原数据
+        console.log("服务器返回消息解析失败:", error)
+        if (onMessage) {
+          onMessage(event.data);
+        }
       }
     };
 

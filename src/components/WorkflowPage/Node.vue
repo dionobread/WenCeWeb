@@ -131,51 +131,54 @@ const confirm = () => {
 <style scoped>
 .workflow-node-container {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  margin: 16px;
-  min-width: 300px;
-  max-width: 400px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 10px;
+  min-width: 240px;
+  max-width: 320px;
   overflow: hidden;
+  transform: scale(0.9);
+  transform-origin: center;
 }
 
 .node-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 16px 20px;
+  padding: 10px 12px;
   color: white;
 }
 
 .node-title {
   margin: 0;
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 600;
 }
 
 .node-content {
-  padding: 20px;
+  padding: 12px;
 }
 
 .item-row {
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
-  gap: 8px;
+  margin-bottom: 8px;
+  gap: 6px;
 }
 
 .delete-btn {
-  background: #ef4444;
+  background: #a2a2a2;
   color: white;
   border: none;
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 12px;
   font-weight: bold;
   transition: background-color 0.2s;
+  flex-shrink: 0;
 }
 
 .delete-btn:hover {
@@ -184,11 +187,13 @@ const confirm = () => {
 
 .item-input {
   flex: 1;
-  padding: 8px 12px;
-  border: 2px solid #e5e7eb;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: 6px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  font-size: 12px;
+  color:#4b5563;
   transition: border-color 0.2s;
+  min-width: 0;
 }
 
 .item-input:focus {
@@ -199,11 +204,12 @@ const confirm = () => {
 .edit-btn {
   background: #f3f4f6;
   border: none;
-  border-radius: 4px;
-  padding: 4px 8px;
+  border-radius: 3px;
+  padding: 3px 6px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 10px;
   transition: background-color 0.2s;
+  flex-shrink: 0;
 }
 
 .edit-btn:hover {
@@ -213,20 +219,21 @@ const confirm = () => {
 .add-item-row {
   display: flex;
   align-items: center;
-  margin-top: 16px;
-  gap: 8px;
-  padding-top: 16px;
+  margin-top: 12px;
+  gap: 6px;
+  padding-top: 12px;
   border-top: 1px solid #e5e7eb;
 }
 
 .new-item-input {
   flex: 1;
-  padding: 8px 12px;
-  border: 2px dashed #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: 6px 8px;
+  border: 1px dashed #d1d5db;
+  border-radius: 4px;
+  font-size: 12px;
   background: #f9fafb;
   transition: border-color 0.2s;
+  min-width: 0;
 }
 
 .new-item-input:focus {
@@ -239,16 +246,17 @@ const confirm = () => {
   background: #10b981;
   color: white;
   border: none;
-  border-radius: 6px;
-  width: 32px;
-  height: 32px;
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 14px;
   font-weight: bold;
   transition: background-color 0.2s;
+  flex-shrink: 0;
 }
 
 .add-btn:hover {
@@ -257,18 +265,18 @@ const confirm = () => {
 
 .node-footer {
   display: flex;
-  gap: 8px;
-  padding: 16px 20px;
+  gap: 6px;
+  padding: 12px;
   background: #f9fafb;
   border-top: 1px solid #e5e7eb;
 }
 
 .action-btn {
   flex: 1;
-  padding: 10px 16px;
+  padding: 6px 10px;
   border: none;
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: 4px;
+  font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -284,12 +292,12 @@ const confirm = () => {
 }
 
 .reject-btn {
-  background: #ef4444;
+  background: #dc6565;
   color: white;
 }
 
 .reject-btn:hover {
-  background: #dc2626;
+  background: #8e4949;
 }
 
 .confirm-btn {

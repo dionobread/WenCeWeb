@@ -65,7 +65,6 @@
         </select>
       </div>
 
-
       <!-- 输入框和发送按钮 -->
       <div class="input-wrapper">
         
@@ -101,7 +100,7 @@ import { chatAPI } from '../../services/api.js';
 
 export default {
   name: "SideChatDialog",
-  emits: ['new-message'], // 声明发出的事件
+  emits: ['system-message', 'node-update'], // 添加 emits 声明
   data() {
     return {
       messages: [],
@@ -216,7 +215,14 @@ export default {
         type: "normal"
       };
 
-      if (typeof data === 'object' && data.tool_info) {
+      // 检查是否是系统消息（包含节点数据）
+      if (typeof data === 'object' && (data.system_message || data.node_data)) {
+        // 处理系统消息，不显示在聊天界面，但发射给父组件
+        this.handleSystemData(data);
+        message.content = "系统已更新工作流数据";
+        message.type = "system";
+        
+      } else if (typeof data === 'object' && data.tool_info) {
         // 处理工具调用消息
         message.content = data.tool_info.tool_output;
         message.toolInfo = data.tool_info;
@@ -230,11 +236,54 @@ export default {
         message.content = data;
       }
 
-      // 发出新消息事件
-      this.$emit('new-message', message);
-
       return message;
     },
+
+    /**
+     * 处理系统数据并发射给父组件
+     */
+    handleSystemData(data) {
+      console.log('处理系统数据:', data);
+      
+      // 发射系统消息事件
+      this.$emit('system-message', data);
+
+      // 根据数据结构提取节点数据
+      if (data.system_message) {
+        // 处理系统消息格式
+        const systemData = data.system_message;
+        
+        if (systemData.intent_extractor) {
+          this.$emit('node-update', {
+            node: 'intent_extractor',
+            items: systemData.intent_extractor
+          });
+        }
+        
+        if (systemData.task_decomposition) {
+          this.$emit('node-update', {
+            node: 'task_decomposition',
+            items: systemData.task_decomposition
+          });
+        }
+      } else if (data.node_data) {
+        // 处理节点数据格式
+        const nodeData = data.node_data;
+        
+        if (nodeData.type === 'intent_extractor') {
+          this.$emit('node-update', {
+            node: 'intent_extractor',
+            items: nodeData.items
+          });
+        } else if (nodeData.type === 'task_decomposition') {
+          this.$emit('node-update', {
+            node: 'task_decomposition',
+            items: nodeData.items
+          });
+        }
+      }
+    },
+
     /**
      * 初始化WebSocket连接
      */
@@ -252,9 +301,6 @@ export default {
             const data = JSON.parse(event.data);
             const message = this.processAssistantMessage(data);
             this.messages.push(message);
-            // 额外触发事件，确保所有消息都被传递
-            this.$emit('new-message', message);
-
           } catch {
             // 如果不是JSON，直接显示
             const message = {
@@ -264,7 +310,6 @@ export default {
               type: "normal"
             };
             this.messages.push(message);
-            this.$emit('new-message', message);
           }
           this.isLoading = false;
         };
@@ -284,12 +329,12 @@ export default {
         console.error('[Error] 初始化WebSocket失败:', error);
       }
     },
-
   },
 };
 </script>
 
 <style scoped>
+/* 样式保持不变 */
 .chatbar-container {
   position: fixed;
   display: flex;

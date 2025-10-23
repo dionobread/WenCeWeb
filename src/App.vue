@@ -58,7 +58,7 @@
     </div>
 
     <!-- 右侧聊天栏 -->
-    <ChatBar />
+    <ChatBar @new-message="handleNewMessage" />
 
     <!-- 底部标签栏 -->
     <BottomPanel
@@ -80,31 +80,42 @@ import Node from "./components/WorkflowPage/Node.vue";
 
 const currentSidebarItem = ref(null);
 const currentTab = ref("Workflow");
+
+// 存储聊天消息
+const latestChatMessage = ref(null);
+const allChatMessages = ref([]);
+
+// 处理新消息
+const handleNewMessage = (message) => {
+  console.log('收到新消息:', message);
+  latestChatMessage.value = message;
+  allChatMessages.value.push(message);
+  
+  // 根据消息内容更新节点或其他组件
+  processChatMessage(message);
+};
+
+// 处理聊天消息的业务逻辑
+const processChatMessage = (message) => {
+  if (message.role === 'user') {
+    // 处理用户消息
+    console.log('用户说:', message.content);
+  } else if (message.role === 'assistant') {
+    // 处理 AI 回复
+    console.log('AI 回复:', message.content);
+    updateIntentExtractor(["1"]);
+    updateTaskDecomposition(["2"]);
+  }
+};
+
 // 拖动相关状态
 const isDragging = ref(false);
 const dragStart = ref({ x: 0, y: 0 });
 const dragOffset = ref({ x: 0, y: 0 });
 
 // 节点数据
-const intentExtractorItems = ref([
-  "评估胃痛症状",
-  "审查当前用药效果",
-  "调整治疗方案",
-  "建议生活方式调整",
-  "决定是否需进一步检查",
-]);
-
-const taskDecompositionItems = ref([
-  "诊断和治疗高血压",
-  "糖尿病管理",
-  "询问患者症状",
-  "询问患者意愿",
-  "病情诊断",
-  "评估病史",
-  "提供用药建议",
-  "提供处方",
-  "提供通用饮食生活建议",
-]);
+const intentExtractorItems = ref([]);
+const taskDecompositionItems = ref([]);
 
 const handleSidebarChange = (id) => {
   currentSidebarItem.value = id;
@@ -115,9 +126,9 @@ const handleBottomTabChange = (tab) => {
   console.log("切换到底部标签页:", tab);
 };
 
-// 拖动功能 - 修改拖动逻辑
+// 拖动功能
 const startDrag = (e) => {
-  // 现在整个 main-content 都可以拖动，不需要检查特定容器
+  // main-content 可以拖动
   isDragging.value = true;
   dragStart.value = { x: e.clientX, y: e.clientY };
   document.body.style.cursor = "grabbing";

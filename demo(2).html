@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>医疗诊断助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 1400px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+            max-height: 800px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .header h3 {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .status {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 8px;
+        }
+
+        .status.connected::before {
+            content: "● ";
+            color: #4ade80;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .chat-panel, .debug-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-panel {
+            border-right: 2px solid #e0e0e0;
+        }
+
+        .panel-header {
+            padding: 12px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            font-weight: 600;
+            color: #666;
+            font-size: 14px;
+        }
+
+        #chatLog {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #ffffff;
+            scroll-behavior: smooth;
+        }
+
+        #debugLog {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #333;
+            font-family: 'Consolas', 'Monaco', monospace;
+            scroll-behavior: smooth;
+        }
+
+        #chatLog::-webkit-scrollbar, #debugLog::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #chatLog::-webkit-scrollbar-track, #debugLog::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #chatLog::-webkit-scrollbar-thumb, #debugLog::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+
+        #chatLog::-webkit-scrollbar-thumb:hover, #debugLog::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 12px;
+            padding: 16px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        #msg {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        #msg:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        #msg::placeholder {
+            color: #999;
+        }
+
+        button {
+            padding: 12px 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            white-space: nowrap;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        /* 聊天消息样式 */
+        .chat-message {
+            margin-bottom: 16px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .message-avatar.user {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .message-avatar.assistant {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .message-avatar.system {
+            background: #6b7280;
+        }
+
+        .message-info {
+            flex: 1;
+        }
+
+        .message-sender {
+            font-weight: 600;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .message-content {
+            margin-left: 40px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .message-content.user {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-left: 3px solid #667eea;
+        }
+
+        .message-content.assistant {
+            background: #f8f9fa;
+            border-left: 3px solid #f5576c;
+        }
+
+        .message-content.system {
+            background: #f3f4f6;
+            border-left: 3px solid #6b7280;
+            color: #666;
+            font-style: italic;
+        }
+
+        .message-content.error {
+            background: #fef2f2;
+            border-left: 3px solid #ef4444;
+            color: #dc2626;
+        }
+
+        .message-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .badge-tool {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-waiting {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-finished {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .tool-info {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #e0e7ff;
+            color: #3730a3;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .metadata-info {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #f9fafb;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .metadata-item {
+            display: inline-block;
+            margin-right: 12px;
+        }
+
+        /* Debug 面板样式 */
+        .debug-message {
+            margin-bottom: 12px;
+            padding: 12px;
+            border-radius: 6px;
+            background: white;
+            border-left: 3px solid #667eea;
+            font-size: 12px;
+        }
+
+        .debug-message.system {
+            border-left-color: #999;
+            background: #f0f0f0;
+        }
+
+        .debug-message.own {
+            border-left-color: #764ba2;
+            background: #f3e8ff;
+        }
+
+        .debug-timestamp {
+            color: #999;
+            font-size: 11px;
+            margin-bottom: 4px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .chat-panel {
+                border-right: none;
+                border-bottom: 2px solid #e0e0e0;
+            }
+
+            .chat-panel, .debug-panel {
+                max-height: 50%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                height: 100vh;
+                max-height: none;
+                border-radius: 0;
+            }
+
+            .header {
+                padding: 16px;
+            }
+
+            .header h3 {
+                font-size: 18px;
+            }
+
+            #msg {
+                font-size: 16px;
+            }
+
+            button {
+                padding: 10px 20px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h3>🏥 医疗诊断助手</h3>
+            <div class="status connected" id="status">连接中...</div>
+        </div>
+        <div class="main-content">
+            <!-- 左侧聊天面板 -->
+            <div class="chat-panel">
+                <div class="panel-header">💬 对话窗口</div>
+                <div id="chatLog"></div>
+            </div>
+            <!-- 右侧调试面板 -->
+            <div class="debug-panel">
+                <div class="panel-header">🔍 调试信息 (原始数据)</div>
+                <div id="debugLog"></div>
+            </div>
+        </div>
+        <div class="input-area">
+            <input id="msg" type="text" placeholder="输入您的症状或回答问题..." />
+            <button onclick="send()">发送</button>
+        </div>
+    </div>
+
+    <script>
+        const url = 'ws://192.168.3.176:8000/ws';
+        const sock = new WebSocket(url);
+        const statusEl = document.getElementById('status');
+
+        sock.onopen = () => {
+            statusEl.textContent = '已连接';
+            statusEl.classList.add('connected');
+            appendChatMessage('system', '[系统] 已成功连接到服务器');
+            appendDebugLog('[*] 已成功连接到服务器', 'system');
+        };
+
+        sock.onmessage = e => {
+            try {
+                // 尝试解析JSON
+                const data = JSON.parse(e.data);
+
+                // 添加到聊天面板
+                appendChatMessage('assistant', data);
+
+                // 添加到调试面板
+                appendDebugLog(JSON.stringify(data, null, 2));
+            } catch {
+                // 如果不是JSON，直接显示
+                appendChatMessage('assistant', e.data);
+                appendDebugLog(e.data);
+            }
+        };
+
+        sock.onclose = () => {
+            statusEl.textContent = '已断开';
+            statusEl.classList.remove('connected');
+            appendChatMessage('system', '[系统] 连接已断开');
+            appendDebugLog('[*] 连接已断开', 'system');
+        };
+
+        sock.onerror = err => {
+            appendChatMessage('error', `[错误] 连接错误: ${err.type}`);
+            appendDebugLog(`[!] 连接错误: ${err.type}`, 'system');
+        };
+
+        function send() {
+            const input = document.getElementById('msg');
+            const message = input.value.trim();
+
+            if (!message) {
+                input.focus();
+                return;
+            }
+
+            if (sock.readyState !== WebSocket.OPEN) {
+                appendChatMessage('error', '[错误] 连接未就绪，请等待连接建立');
+                return;
+            }
+
+            try {
+                sock.send(message);
+                appendChatMessage('user', message);
+                appendDebugLog(`【我】${message}`, 'own');
+                input.value = '';
+                input.focus();
+            } catch (err) {
+                appendChatMessage('error', `[错误] 发送失败: ${err}`);
+                appendDebugLog(`[!] 发送失败: ${err}`, 'system');
+            }
+        }
+
+        function appendChatMessage(type, content) {
+            const chatBox = document.getElementById('chatLog');
+            const time = new Date().toLocaleTimeString();
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message';
+
+            let html = '';
+
+            if (type === 'user') {
+                // 用户消息
+                html = `
+                    <div class="message-header">
+                        <div class="message-avatar user">👤</div>
+                        <div class="message-info">
+                            <div class="message-sender">您</div>
+                            <div class="message-time">${time}</div>
+                        </div>
+                    </div>
+                    <div class="message-content user">${escapeHtml(content)}</div>
+                `;
+            } else if (type === 'assistant') {
+                // 助手消息 (JSON格式)
+                if (typeof content === 'object' && content.tool_info) {
+                    const toolName = content.tool_info.tool_name;
+                    const toolOutput = content.tool_info.tool_output;
+                    const executionMode = content.metadata?.execution_mode || 'automatic';
+
+                    let badge = '';
+                    if (toolName === 'system') {
+                        badge = '<span class="badge-tool">系统消息</span>';
+                    } else if (executionMode === 'waiting_for_user_answer') {
+                        badge = '<span class="badge-waiting">等待回答</span>';
+                    } else if (executionMode === 'waiting_for_task_result') {
+                        badge = '<span class="badge-waiting">等待检查结果</span>';
+                    } else if (executionMode === 'finished') {
+                        badge = '<span class="badge-finished">诊断完成</span>';
+                    } else if (toolName === 'error') {
+                        badge = '<span class="badge-error">错误</span>';
+                    }
+
+                    let metadata = '';
+                    if (content.metadata) {
+                        const items = [];
+                        if (content.metadata.inquire_round) {
+                            items.push(`询问轮次: ${content.metadata.inquire_round}`);
+                        }
+                        if (content.metadata.pending_questions_count) {
+                            items.push(`问题数: ${content.metadata.current_question_index + 1}/${content.metadata.pending_questions_count}`);
+                        }
+                        if (content.metadata.current_task) {
+                            items.push(`任务进度: ${content.metadata.current_task}/${content.metadata.total_tasks}`);
+                        }
+                        if (content.metadata.current_subtask) {
+                            items.push(`子任务: ${content.metadata.current_subtask}/${content.metadata.total_subtasks}`);
+                        }
+
+                        if (items.length > 0) {
+                            metadata = `<div class="metadata-info">${items.map(item => `<span class="metadata-item">${item}</span>`).join('')}</div>`;
+                        }
+                    }
+
+                    html = `
+                        <div class="message-header">
+                            <div class="message-avatar assistant">🤖</div>
+                            <div class="message-info">
+                                <div class="message-sender">医疗助手</div>
+                                <div class="message-time">${time}</div>
+                            </div>
+                        </div>
+                        <div class="message-content assistant">
+                            ${badge}
+                            ${toolName !== 'system' && toolName !== 'response' ? `<div class="tool-info">🔧 ${toolName}</div>` : ''}
+                            <div>${formatOutput(toolOutput)}</div>
+                            ${metadata}
+                        </div>
+                    `;
+                } else {
+                    // 普通文本消息
+                    html = `
+                        <div class="message-header">
+                            <div class="message-avatar assistant">🤖</div>
+                            <div class="message-info">
+                                <div class="message-sender">医疗助手</div>
+                                <div class="message-time">${time}</div>
+                            </div>
+                        </div>
+                        <div class="message-content assistant">${escapeHtml(content)}</div>
+                    `;
+                }
+            } else if (type === 'system') {
+                // 系统消息
+                html = `
+                    <div class="message-header">
+                        <div class="message-avatar system">⚙️</div>
+                        <div class="message-info">
+                            <div class="message-sender">系统</div>
+                            <div class="message-time">${time}</div>
+                        </div>
+                    </div>
+                    <div class="message-content system">${escapeHtml(content)}</div>
+                `;
+            } else if (type === 'error') {
+                // 错误消息
+                html = `
+                    <div class="message-header">
+                        <div class="message-avatar system">⚠️</div>
+                        <div class="message-info">
+                            <div class="message-sender">错误</div>
+                            <div class="message-time">${time}</div>
+                        </div>
+                    </div>
+                    <div class="message-content error">${escapeHtml(content)}</div>
+                `;
+            }
+
+            messageDiv.innerHTML = html;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function appendDebugLog(txt, type = 'normal') {
+            const box = document.getElementById('debugLog');
+            const time = new Date().toLocaleTimeString();
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `debug-message ${type}`;
+            messageDiv.innerHTML = `<div class="debug-timestamp">[${time}]</div>${escapeHtml(txt)}`;
+
+            box.appendChild(messageDiv);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function formatOutput(text) {
+            if (!text) return '';
+
+            // 转义HTML
+            text = escapeHtml(text);
+
+            // 保留换行
+            text = text.replace(/\n/g, '<br>');
+
+            // 高亮问题编号
+            text = text.replace(/问题 (\d+):/g, '<strong>问题 $1:</strong>');
+
+            // 高亮类型
+            text = text.replace(/类型: (.*?)(<br>|$)/g, '<strong>类型:</strong> <em>$1</em>$2');
+
+            return text;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        document.getElementById('msg').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                send();
+            }
+        });
+
+        // 页面加载时自动聚焦
+        document.getElementById('msg').focus();
+    </script>
+</body>
+</html>
