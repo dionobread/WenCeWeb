@@ -37,10 +37,13 @@
             @confirm="confirmNode"
           />
         </div>
-        
+
         <!-- 右侧：Workflow 和 Instance 垂直放置 -->
         <div class="workflow-instance-section">
-          <WorkflowInstance ref="workflowInstanceRef" :workflow-data="workflowInstanceData" />
+          <WorkflowInstance
+            ref="workflowInstanceRef"
+            :workflow-data="workflowInstanceData"
+          />
         </div>
       </div>
 
@@ -92,7 +95,7 @@ const bottomPanelData = ref({
   Planner: [],
   Executor: [],
   Synthesizer: [],
-  'User Proxy': []
+  "User Proxy": [],
 });
 
 const handleSidebarChange = (id) => {
@@ -141,31 +144,24 @@ const endDrag = () => {
 
 // 解析 intent_understand 的输出
 const parseIntentOutput = (output) => {
+  if (output.startsWith("```json")) {
+    output = output.substring(7).trim();
+  }
+  if (output.endsWith("```")) {
+    output = output.substring(0, output.length - 3).trim();
+  }
+
   const items = [];
-  const lines = output.split('\n');
-  
-  for (const line of lines) {
-    const trimmed = line.trim();
-    
-    // 跳过空行
-    if (!trimmed) continue;
-    
-    // 匹配主项: "1. ", "2. ", "3. " 等
-    const mainMatch = trimmed.match(/^(\d+)\.\s+(.+)$/);
-    if (mainMatch) {
-      items.push(mainMatch[2]);
-      continue;
-    }
-    
-    // 匹配子项: "- " 开头,添加缩进
-    const subMatch = trimmed.match(/^-\s+(.+)$/);
-    if (subMatch) {
-      items.push(`  • ${subMatch[1]}`);
-      continue;
+  const parsed = JSON.parse(output);
+  if (parsed.primary_intent) {
+    items.push(`${parsed.primary_intent.intent_type}`);
+  }
+  if (parsed.secondary_intents){
+    for (var intent of parsed.secondary_intents){
+      items.push(`  ● ${intent.intent_type}`);
     }
   }
-  
-  console.log('[parseIntentOutput] 解析结果:', items);
+  console.log("[parseIntentOutput] 解析结果:", items);
   return items;
 };
 
@@ -174,29 +170,29 @@ const parseTaskDecomposition = (output) => {
   try {
     // 去除 markdown 代码块标记
     let jsonStr = output.trim();
-    
+
     // 如果包含多个 ### 标题，先提取 JSON 部分
-    if (jsonStr.includes('### 调整后的任务列表') || jsonStr.includes('###')) {
+    if (jsonStr.includes("### 调整后的任务列表") || jsonStr.includes("###")) {
       // 提取 ```json 到 ``` 之间的内容
       const jsonMatch = jsonStr.match(/```json\s*([\s\S]*?)\s*```/);
       if (jsonMatch) {
         jsonStr = jsonMatch[1].trim();
       }
     }
-    
+
     // 去除可能残留的代码块标记
-    if (jsonStr.startsWith('```json')) {
-      jsonStr = jsonStr.replace(/^```json\n/, '').replace(/\n```$/, '');
-    } else if (jsonStr.startsWith('```')) {
-      jsonStr = jsonStr.replace(/^```\n/, '').replace(/\n```$/, '');
+    if (jsonStr.startsWith("```json")) {
+      jsonStr = jsonStr.replace(/^```json\n/, "").replace(/\n```$/, "");
+    } else if (jsonStr.startsWith("```")) {
+      jsonStr = jsonStr.replace(/^```\n/, "").replace(/\n```$/, "");
     }
-    
+
     const parsed = JSON.parse(jsonStr);
-    console.log('[parseTaskDecomposition] 解析成功:', parsed);
+    console.log("[parseTaskDecomposition] 解析成功:", parsed);
     return parsed;
   } catch (error) {
-    console.error('[parseTaskDecomposition] 解析失败:', error);
-    console.error('[parseTaskDecomposition] 原始数据:', output);
+    console.error("[parseTaskDecomposition] 解析失败:", error);
+    console.error("[parseTaskDecomposition] 原始数据:", output);
     return null;
   }
 };
@@ -210,97 +206,97 @@ const parseTaskDecomposition = (output) => {
 // 提取更新后的执行路径
 const extractExecutionPath = (output) => {
   const match = output.match(/### 更新后的执行路径([\s\S]*?)$/);
-  return match ? match[0].trim() : '';
+  return match ? match[0].trim() : "";
 };
 
 // 处理新消息
 const handleNewMessage = (message) => {
-  console.log('收到新消息:', message);
-  
-  if (message.role === 'assistant' && message.toolInfo) {
+  console.log("收到新消息:", message);
+
+  if (message.role === "assistant" && message.toolInfo) {
     const toolName = message.toolInfo.tool_name;
     const toolOutput = message.toolInfo.tool_output;
     const fullData = message.metadata || {};
-    
+
     // 所有数据都添加到 Overview
     bottomPanelData.value.Overview.push({
       tool_name: toolName,
       tool_output: toolOutput,
       timestamp: message.timestamp,
-      metadata: fullData
+      metadata: fullData,
     });
-    
+
     // 根据 tool_name 分发数据
     switch (toolName) {
-      case 'intent_understand': {
+      case "intent_understand": {
         // 更新 Intent Extractor Node
         const intentItems = parseIntentOutput(toolOutput);
         intentExtractorItems.value = intentItems;
-        
+
         // 添加到 BottomPanel 的 Intent 标签
         bottomPanelData.value.Intent.push({
           tool_output: toolOutput,
           timestamp: message.timestamp,
-          parsed_items: intentItems
+          parsed_items: intentItems,
         });
         break;
       }
-      
-      case 'task_decomposition': {
+
+      case "task_decomposition": {
         const taskData = parseTaskDecomposition(toolOutput);
-        
+
         if (taskData && taskData.tasks) {
           // 更新 Task Decomposition Node (仅显示一级任务名称)
-          const taskNames = taskData.tasks.map(task => task.task_name);
+          const taskNames = taskData.tasks.map((task) => task.task_name);
           taskDecompositionItems.value = taskNames;
-          
+
           // 更新 WorkflowInstance (包含完整任务数据)
           workflowInstanceData.value = taskData;
-          
+
           // 添加到 BottomPanel 的 Decomposer
           bottomPanelData.value.Decomposer.push({
             tool_output: toolOutput,
             timestamp: message.timestamp,
-            parsed_data: taskData
+            parsed_data: taskData,
           });
         }
         break;
       }
-      
-      case 'planning': {
+
+      case "planning": {
         // 添加到 BottomPanel 的 Planner (完全替换原有逻辑)
         bottomPanelData.value.Planner.push({
           tool_output: toolOutput,
           timestamp: message.timestamp,
-          tool_name: toolName
+          tool_name: toolName,
         });
         break;
       }
-      
-      case 'request_task_result': {
+
+      case "request_task_result": {
         // request_task_result 直接显示在 ChatBar，不需要特殊处理
         // ChatBar 会自动显示这类消息
         break;
       }
-      
-      case 'feedback': {
-        console.log('[handleNewMessage] 处理 feedback');
-        console.log('[handleNewMessage] toolOutput:', toolOutput);
+
+      case "feedback": {
+        console.log("[handleNewMessage] 处理 feedback");
+        console.log("[handleNewMessage] toolOutput:", toolOutput);
 
         // 提取调整后的任务列表
         const updatedTasks = parseTaskDecomposition(toolOutput);
-        console.log('[handleNewMessage] 解析后的任务:', updatedTasks);
+        console.log("[handleNewMessage] 解析后的任务:", updatedTasks);
 
         if (updatedTasks && updatedTasks.tasks) {
           // 完全替换 WorkflowInstance 数据
           workflowInstanceData.value = updatedTasks;
-          console.log('[handleNewMessage] workflowInstanceData 已更新');
+          console.log("[handleNewMessage] workflowInstanceData 已更新");
 
           // 更新 Task Decomposition Node
-          const taskNames = updatedTasks.tasks.map(task => task.task_name);
+          const taskNames = updatedTasks.tasks.map((task) => task.task_name);
           taskDecompositionItems.value = taskNames;
         } else {
-          console.error('[handleNewMessage] 未能解析任务数据');
+          console.error("[handleNewMessage] 未能解析任务数据");
         }
 
         // 提取更新后的执行路径 (Mermaid 图表和说明)
@@ -311,7 +307,7 @@ const handleNewMessage = (message) => {
           bottomPanelData.value.Planner.push({
             tool_output: executionPath,
             timestamp: message.timestamp,
-            tool_name: 'feedback_path'
+            tool_name: "feedback_path",
           });
         }
 
@@ -319,25 +315,25 @@ const handleNewMessage = (message) => {
         break;
       }
 
-      case 'finish': {
-        console.log('[handleNewMessage] 收到 finish，标记所有任务为已完成');
-        
+      case "finish": {
+        console.log("[handleNewMessage] 收到 finish，标记所有任务为已完成");
+
         // 调用 WorkflowInstance 的方法标记所有任务为已完成
         if (workflowInstanceRef.value) {
           workflowInstanceRef.value.markAllAsCompleted();
         }
-        
+
         // finish 消息也可能需要在其他地方显示
         // 根据需要添加到相应的面板
         break;
       }
-      case 'system':
-      case 'info_inquire':
+      case "system":
+      case "info_inquire":
         // 这些消息已经在 ChatBar 中显示
         break;
-        
+
       default:
-        console.log('未处理的 tool_name:', toolName);
+        console.log("未处理的 tool_name:", toolName);
     }
   }
 };

@@ -18,10 +18,13 @@
           ×
         </button>
         
-        <input 
+        <textarea 
           v-model="items[index]" 
           class="item-input"
           @blur="updateItem(index, $event.target.value)"
+          @input="autoResize($event)"
+          rows="1"
+          ref="textareas"
         />
         
         <button 
@@ -34,11 +37,14 @@
       </div>
       
       <div class="add-item-row">
-        <input 
+        <textarea 
           v-model="newItem" 
           class="new-item-input"
           placeholder="添加新项..."
           @keyup.enter="addItem"
+          @input="autoResizeNewItem($event)"
+          rows="1"
+          ref="newItemTextarea"
         />
         <button 
           class="add-btn" 
@@ -65,7 +71,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, nextTick } from 'vue';
 
 // 定义组件名称
 defineOptions({
@@ -87,12 +93,36 @@ const emit = defineEmits(['update', 'details', 'reject', 'confirm']);
 
 const items = ref([...props.initialItems]);
 const newItem = ref('');
+const textareas = ref([]);
+const newItemTextarea = ref(null);
 
 // 监听 props.initialItems 的变化
 watch(() => props.initialItems, (newItems) => {
   console.log(`[Node ${props.title}] initialItems 更新:`, newItems);
   items.value = [...newItems];
+  // 等待DOM更新后调整所有textarea的高度
+  nextTick(() => {
+    textareas.value.forEach(textarea => {
+      if (textarea) {
+        autoResize({ target: textarea });
+      }
+    });
+  });
 }, { deep: true });
+
+// 自动调整现有项目textarea的高度
+const autoResize = (event) => {
+  const textarea = event.target;
+  textarea.style.height = 'auto';
+  textarea.style.height = textarea.scrollHeight + 'px';
+};
+
+// 自动调整新项textarea的高度
+const autoResizeNewItem = (event) => {
+  const textarea = event.target;
+  textarea.style.height = 'auto';
+  textarea.style.height = textarea.scrollHeight + 'px';
+};
 
 const deleteItem = (index) => {
   items.value.splice(index, 1);
@@ -106,10 +136,10 @@ const updateItem = (index, value) => {
 
 const editItem = (index) => {
   // 聚焦到对应的输入框
-  const input = document.querySelectorAll('.item-input')[index];
-  if (input) {
-    input.focus();
-    input.select();
+  const textarea = textareas.value[index];
+  if (textarea) {
+    textarea.focus();
+    textarea.select();
   }
 };
 
@@ -118,6 +148,13 @@ const addItem = () => {
     items.value.push(newItem.value.trim());
     newItem.value = '';
     emit('update', items.value);
+    
+    // 重置新项目textarea的高度
+    nextTick(() => {
+      if (newItemTextarea.value) {
+        newItemTextarea.value.style.height = 'auto';
+      }
+    });
   }
 };
 
@@ -165,7 +202,7 @@ const confirm = () => {
 
 .item-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 8px;
   gap: 6px;
 }
@@ -185,6 +222,7 @@ const confirm = () => {
   font-weight: bold;
   transition: background-color 0.2s;
   flex-shrink: 0;
+  margin-top: 6px;
 }
 
 .delete-btn:hover {
@@ -197,9 +235,13 @@ const confirm = () => {
   border: 1px solid #e5e7eb;
   border-radius: 4px;
   font-size: 12px;
-  color:#4b5563;
+  color: #4b5563;
   transition: border-color 0.2s;
   min-width: 0;
+  resize: none;
+  overflow: hidden;
+  font-family: inherit;
+  line-height: 1.4;
 }
 
 .item-input:focus {
@@ -216,6 +258,7 @@ const confirm = () => {
   font-size: 10px;
   transition: background-color 0.2s;
   flex-shrink: 0;
+  margin-top: 6px;
 }
 
 .edit-btn:hover {
@@ -224,7 +267,7 @@ const confirm = () => {
 
 .add-item-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   margin-top: 12px;
   gap: 6px;
   padding-top: 12px;
@@ -240,6 +283,10 @@ const confirm = () => {
   background: #f9fafb;
   transition: border-color 0.2s;
   min-width: 0;
+  resize: none;
+  overflow: hidden;
+  font-family: inherit;
+  line-height: 1.4;
 }
 
 .new-item-input:focus {
@@ -263,6 +310,7 @@ const confirm = () => {
   font-weight: bold;
   transition: background-color 0.2s;
   flex-shrink: 0;
+  margin-top: 6px;
 }
 
 .add-btn:hover {
