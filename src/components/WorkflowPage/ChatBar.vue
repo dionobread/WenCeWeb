@@ -32,7 +32,7 @@
         </div>
 
         <div class="message-content">
-          <div class="message-text">{{ message.content }}</div>
+          <div class="message-text" v-html="formatMessageContent(message.content)"></div>
           <div class="message-time">{{ formatTime(message.timestamp) }}</div>
         </div>
 
@@ -207,46 +207,93 @@ export default {
       return model ? model.label : value;
     },
 
-    processAssistantMessage(data) {
-      let message = {
-        role: "assistant",
-        timestamp: new Date(),
-        type: "normal"
-      };
+      // 格式化消息内容（支持简单的 Markdown）
+  formatMessageContent(content) {
+    if (!content) return '';
+    
+    let formatted = content;
+    
+    // 转义 HTML 特殊字符（但保留换行）
+    formatted = formatted
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    
+    // 处理标题：### 标题
+    formatted = formatted.replace(/^### (.+)$/gm, '<h3 class="msg-heading">$1</h3>');
+    
+    // 处理加粗：**文字**
+    formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    
+    // 处理有序列表：1. 、2. 等
+    formatted = formatted.replace(/^(\d+)\.\s+(.+)$/gm, '<div class="msg-list-item"><span class="msg-list-number">$1.</span> $2</div>');
+    
+    // 处理无序列表：- 开头
+    formatted = formatted.replace(/^-\s+(.+)$/gm, '<div class="msg-list-item"><span class="msg-bullet">•</span> $1</div>');
+    
+    // 处理缩进列表（4个空格或tab开头）
+    formatted = formatted.replace(/^(?: |\t)-\s+(.+)$/gm, '<div class="msg-list-item msg-list-indent"><span class="msg-bullet">•</span> $1</div>');
+    
+    // 处理换行：\n 转换为 <br>
+    formatted = formatted.replace(/\n/g, '<br>');
+    
+    return formatted;
+  },
 
-      if (typeof data === 'object' && data.tool_info) {
-        const toolName = data.tool_info.tool_name;
-        
-        console.log(`[ChatBar] 处理工具消息: ${toolName}`);
-        
-        // 只有 system 和 info_inquire 的消息才显示在 ChatBar
-        if (toolName === 'system' || toolName === 'info_inquire') {
-          message.content = data.tool_info.tool_output;
-          message.toolInfo = data.tool_info;
-          message.metadata = data.metadata;
-          return message;
-        }
-        
-        // 其他工具的消息不在 ChatBar 显示，但仍然触发事件
+  processAssistantMessage(data) {
+    let message = {
+      role: "assistant",
+      timestamp: new Date(),
+      type: "normal"
+    };
+
+    if (typeof data === 'object' && data.tool_info) {
+      const toolName = data.tool_info.tool_name;
+      
+      console.log(`[ChatBar] 处理工具消息: ${toolName}`);
+      
+      // system, info_inquire, request_task_result 和 feedback 的反馈分析显示在 ChatBar
+      if (toolName === 'system' || toolName === 'info_inquire' || toolName === 'request_task_result') {
         message.content = data.tool_info.tool_output;
         message.toolInfo = data.tool_info;
         message.metadata = data.metadata;
-        
-        console.log(`[ChatBar] ${toolName} 消息不显示在聊天框，但触发事件`);
-        console.log(`[ChatBar] toolInfo:`, message.toolInfo);
-        
-        // 发出事件但不添加到 messages
-        this.$emit('new-message', message);
-        return null;
-        
-      } else if (typeof data === 'object') {
-        message.content = JSON.stringify(data, null, 2);
-      } else {
-        message.content = data;
+        return message;
       }
+      
+      // feedback 只显示反馈分析部分
+      if (toolName === 'feedback') {
+        const feedbackAnalysis = this.extractFeedbackAnalysis(data.tool_info.tool_output);
+        message.content = feedbackAnalysis || data.tool_info.tool_output;
+        message.toolInfo = data.tool_info;
+        message.metadata = data.metadata;
+        return message;
+      }
+      
+      // 其他工具的消息不在 ChatBar 显示，但仍然触发事件
+      message.content = data.tool_info.tool_output;
+      message.toolInfo = data.tool_info;
+      message.metadata = data.metadata;
+      
+      console.log(`[ChatBar] ${toolName} 消息不显示在聊天框，但触发事件`);
+      
+      // 发出事件但不添加到 messages
+      this.$emit('new-message', message);
+      return null;
+      
+    } else if (typeof data === 'object') {
+      message.content = JSON.stringify(data, null, 2);
+    } else {
+      message.content = data;
+    }
 
-      return message;
-    },
+    return message;
+  },
+
+  // 提取反馈分析部分
+  extractFeedbackAnalysis(output) {
+    const match = output.match(/### 反馈分析([\s\S]*?)(?=### 调整后的任务列表|###[\s]*调整后|$)/);
+    return match ? match[0].trim() : '';
+  },
 
     initWebSocket() {
       try {
@@ -417,6 +464,63 @@ export default {
   text-align: right;
 }
 
+.message-text :deep(h3.msg-heading) {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 12px 0 8px 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.user-message .message-text :deep(h3.msg-heading) {
+  color: #ffffff;
+  border-bottom-color: rgba(255, 255, 255, 0.3);
+}
+
+.message-text :deep(strong) {
+  font-weight: 600;
+  color: #111827;
+}
+
+.user-message .message-text :deep(strong) {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.message-text :deep(.msg-list-item) {
+  margin: 4px 0;
+  display: flex;
+  align-items: flex-start;
+  line-height: 1.6;
+}
+
+.message-text :deep(.msg-list-number) {
+  font-weight: 600;
+  margin-right: 6px;
+  flex-shrink: 0;
+  color: #374151;
+}
+
+.user-message .message-text :deep(.msg-list-number) {
+  color: #ffffff;
+}
+
+.message-text :deep(.msg-bullet) {
+  margin-right: 6px;
+  flex-shrink: 0;
+  color: #6b7280;
+}
+
+.user-message .message-text :deep(.msg-bullet) {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.message-text :deep(.msg-list-indent) {
+  margin-left: 20px;
+}
+
+/* 确保 message-text 支持 HTML */
 .message-text {
   background: #f3f4f6;
   padding: 12px 16px;

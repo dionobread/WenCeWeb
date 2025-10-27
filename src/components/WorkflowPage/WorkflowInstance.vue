@@ -17,13 +17,12 @@
             <div class="workflow-card-header">
               <h3 class="workflow-name">{{ workflow.name }}</h3>
               <button
-                class="execute-btn"
-                :class="{ 'execute-btn-disabled': isExecuting }"
-                :disabled="isExecuting"
-                @click.stop="handleExecute(workflow)"
+                class="display-btn"
+                @click.stop="handleDisplay(workflow)"
               >
-                <svg class="play-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
                 </svg>
               </button>
             </div>
@@ -57,17 +56,13 @@
           :key="task.id"
           class="instance-card"
           :class="{
-            'instance-card-running': task.status === 'running',
-            'instance-card-completed': task.status === 'completed'
+            'instance-card-completed': task.status === 'yes'
           }"
         >
           <div class="instance-card-header">
             <h4 class="instance-name">{{ task.name }}</h4>
             <div class="status-icon">
-              <svg v-if="task.status === 'running'" class="icon-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M21 12a9 9 0 11-6.219-8.56"></path>
-              </svg>
-              <svg v-else-if="task.status === 'completed'" class="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <svg v-if="task.status === 'yes'" class="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path d="M22 11.08V12a10 10 0 11-5.93-9.14"></path>
                 <polyline points="22 4 12 14.01 9 11.01"></polyline>
               </svg>
@@ -78,18 +73,62 @@
             </div>
           </div>
           
-          <div class="status-badge" :class="`status-${task.status}`">
+          <div class="status-badge" :class="`status-${task.status === 'yes' ? 'completed' : 'pending'}`">
             {{ getStatusText(task.status) }}
           </div>
           
-          <!-- 显示子任务 -->
-          <div v-if="task.subtasks && task.subtasks.length > 0" class="subtasks-list">
-            <div
-              v-for="subtask in task.subtasks"
-              :key="subtask.subtask_id"
-              class="subtask-item"
-            >
-              <span class="subtask-name">{{ subtask.subtask_name }}</span>
+          <!-- 任务描述 -->
+          <div v-if="task.description" class="task-description">
+            {{ task.description }}
+          </div>
+          
+          <!-- 期望结果类型 -->
+          <div v-if="task.expected_result_type" class="task-info-item">
+            <span class="info-label">结果类型:</span>
+            <span class="info-value">{{ task.expected_result_type }}</span>
+          </div>
+          
+          <!-- 执行流程详细信息 -->
+          <div v-if="task.execution_procedure" class="execution-procedure">
+            <div class="procedure-title">执行流程</div>
+            
+            <div v-if="task.execution_procedure.就诊时间" class="procedure-item">
+              <span class="procedure-label">就诊时间:</span>
+              <span class="procedure-value">{{ task.execution_procedure.就诊时间 }}</span>
+            </div>
+            
+            <div v-if="task.execution_procedure.就诊地点" class="procedure-item">
+              <span class="procedure-label">就诊地点:</span>
+              <span class="procedure-value">{{ task.execution_procedure.就诊地点 }}</span>
+            </div>
+            
+            <div v-if="task.execution_procedure.执行步骤 && task.execution_procedure.执行步骤.length > 0" class="procedure-steps">
+              <div class="procedure-label">执行步骤:</div>
+              <div class="steps-list">
+                <div v-for="(step, idx) in task.execution_procedure.执行步骤" :key="idx" class="step-item">
+                  {{ step }}
+                </div>
+              </div>
+            </div>
+            
+            <div v-if="task.execution_procedure.注意事项 && task.execution_procedure.注意事项.length > 0" class="procedure-notes">
+              <div class="procedure-label">注意事项:</div>
+              <div class="notes-list">
+                <div v-for="(note, idx) in task.execution_procedure.注意事项" :key="idx" class="note-item">
+                  • {{ note }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="procedure-footer">
+              <div v-if="task.execution_procedure.预计耗时" class="procedure-item-inline">
+                <span class="procedure-label">预计耗时:</span>
+                <span class="procedure-value">{{ task.execution_procedure.预计耗时 }}</span>
+              </div>
+              <div v-if="task.execution_procedure.费用参考" class="procedure-item-inline">
+                <span class="procedure-label">费用参考:</span>
+                <span class="procedure-value">{{ task.execution_procedure.费用参考 }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -118,27 +157,39 @@ const props = defineProps({
 
 const selectedWorkflow = ref(null);
 const workflows = ref([]);
-const isExecuting = ref(false);
 
 // 监听 workflowData 的变化，转换为内部格式
 watch(() => props.workflowData, (newData) => {
+  console.log('[WorkflowInstance] workflowData 变化:', newData);
+  
   if (newData && newData.tasks) {
-    workflows.value = newData.tasks.map((task, index) => ({
-      id: index + 1,
+    const newWorkflows = newData.tasks.map((task, index) => ({
+      id: task.task_id || (index + 1),
       name: task.task_name,
       description: task.task_description,
       priority: task.priority,
+      hospital_name: task.hospital_name,
       subTasks: (task.subtasks || []).map(subtask => ({
         id: subtask.subtask_id,
         name: subtask.subtask_name,
         description: subtask.subtask_description,
-        status: 'pending',
-        subtasks: subtask.subtasks || []
+        expected_result_type: subtask.expected_result_type,
+        status: subtask.status === 'yes' ? 'yes' : subtask.status === 'no' ? 'no' : 'pending',
+        execution_procedure: subtask.execution_procedure || null
       }))
     }));
     
-    // 自动选择第一个工作流
-    if (workflows.value.length > 0 && !selectedWorkflow.value) {
+    workflows.value = newWorkflows;
+    console.log('[WorkflowInstance] workflows 已更新:', workflows.value);
+    
+    if (selectedWorkflow.value) {
+      const stillExists = workflows.value.find(wf => wf.id === selectedWorkflow.value.id);
+      if (stillExists) {
+        selectedWorkflow.value = stillExists;
+      } else if (workflows.value.length > 0) {
+        selectedWorkflow.value = workflows.value[0];
+      }
+    } else if (workflows.value.length > 0) {
       selectedWorkflow.value = workflows.value[0];
     }
   }
@@ -153,82 +204,46 @@ const currentSubTasks = computed(() => {
 
 // 处理工作流选择
 const handleWorkflowClick = (workflow) => {
-  if (!isExecuting.value) {
-    selectedWorkflow.value = workflow;
+  selectedWorkflow.value = workflow;
+};
+
+// 处理显示按钮点击
+const handleDisplay = (workflow) => {
+  selectedWorkflow.value = workflow;
+};
+
+// 暴露方法供父组件调用：将所有任务标记为已完成
+const markAllAsCompleted = () => {
+  console.log('[WorkflowInstance] 标记所有任务为已完成');
+  workflows.value = workflows.value.map(wf => ({
+    ...wf,
+    subTasks: wf.subTasks.map(task => ({
+      ...task,
+      status: 'yes'
+    }))
+  }));
+  
+  // 更新当前选中的 workflow 引用
+  if (selectedWorkflow.value) {
+    const updated = workflows.value.find(wf => wf.id === selectedWorkflow.value.id);
+    if (updated) {
+      selectedWorkflow.value = updated;
+    }
   }
 };
 
-// 处理执行按钮点击
-const handleExecute = (workflow) => {
-  if (isExecuting.value) return;
-  
-  selectedWorkflow.value = workflow;
-  isExecuting.value = true;
-  
-  // 重置所有子任务状态
-  workflows.value = workflows.value.map(wf => {
-    if (wf.id === workflow.id) {
-      return {
-        ...wf,
-        subTasks: wf.subTasks.map(task => ({ ...task, status: 'pending' }))
-      };
-    }
-    return wf;
-  });
-  
-  // 模拟依次执行子任务
-  workflow.subTasks.forEach((task, index) => {
-    setTimeout(() => {
-      workflows.value = workflows.value.map(wf => {
-        if (wf.id === workflow.id) {
-          return {
-            ...wf,
-            subTasks: wf.subTasks.map(t => {
-              if (t.id === task.id) {
-                return { ...t, status: 'running' };
-              }
-              return t;
-            })
-          };
-        }
-        return wf;
-      });
-      
-      // 1秒后完成当前任务
-      setTimeout(() => {
-        workflows.value = workflows.value.map(wf => {
-          if (wf.id === workflow.id) {
-            return {
-              ...wf,
-              subTasks: wf.subTasks.map(t => {
-                if (t.id === task.id) {
-                  return { ...t, status: 'completed' };
-                }
-                return t;
-              })
-            };
-          }
-          return wf;
-        });
-        
-        // 如果是最后一个任务，结束执行状态
-        if (index === workflow.subTasks.length - 1) {
-          setTimeout(() => {
-            isExecuting.value = false;
-          }, 500);
-        }
-      }, 1000);
-    }, index * 1500);
-  });
-};
+// 暴露方法给父组件
+defineExpose({
+  markAllAsCompleted
+});
 
 // 获取状态文本
 const getStatusText = (status) => {
   switch (status) {
-    case 'running':
-      return '执行中';
-    case 'completed':
+    case 'yes':
       return '已完成';
+    case 'no':
+      return '待执行';
     default:
       return '待执行';
   }
@@ -316,30 +331,26 @@ const getStatusText = (status) => {
   flex: 1;
 }
 
-.execute-btn {
-  padding: 8px;
-  background-color: #fbbf24;
+.display-btn {
+  padding: 6px;
+  background-color: #3b82f6;
   border: none;
-  border-radius: 50%;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.execute-btn:hover:not(:disabled) {
-  background-color: #f59e0b;
+.display-btn:hover {
+  background-color: #2563eb;
+  transform: scale(1.05);
 }
 
-.execute-btn-disabled {
-  background-color: #e5e7eb;
-  cursor: not-allowed;
-}
-
-.play-icon {
-  width: 16px;
-  height: 16px;
+.eye-icon {
+  width: 18px;
+  height: 18px;
   color: white;
   stroke-width: 2;
 }
@@ -373,7 +384,7 @@ const getStatusText = (status) => {
 
 .instance-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
 }
 
@@ -383,12 +394,6 @@ const getStatusText = (status) => {
   padding: 16px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-}
-
-.instance-card-running {
-  ring: 2px solid #3b82f6;
-  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
-  transform: scale(1.05);
 }
 
 .instance-card-completed {
@@ -421,11 +426,6 @@ const getStatusText = (status) => {
   stroke-width: 2;
 }
 
-.icon-spinner {
-  color: #3b82f6;
-  animation: spin 1s linear infinite;
-}
-
 .icon-check {
   color: #10b981;
 }
@@ -434,27 +434,13 @@ const getStatusText = (status) => {
   color: #9ca3af;
 }
 
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .status-badge {
   display: inline-block;
   font-size: 12px;
   font-weight: 500;
   padding: 4px 8px;
   border-radius: 9999px;
-  margin-bottom: 8px;
-}
-
-.status-running {
-  background-color: #dbeafe;
-  color: #1e40af;
+  margin-bottom: 12px;
 }
 
 .status-completed {
@@ -467,23 +453,97 @@ const getStatusText = (status) => {
   color: #4b5563;
 }
 
-.subtasks-list {
+.task-description {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.task-info-item {
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.info-label {
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.info-value {
+  color: #6b7280;
+  margin-left: 4px;
+}
+
+.execution-procedure {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid #e5e7eb;
 }
 
-.subtask-item {
-  padding: 6px 8px;
-  margin-bottom: 4px;
-  background-color: #f9fafb;
-  border-radius: 6px;
+.procedure-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.procedure-item {
   font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.procedure-label {
+  font-weight: 600;
+  color: #4b5563;
+  display: inline-block;
+  min-width: 70px;
+}
+
+.procedure-value {
   color: #6b7280;
 }
 
-.subtask-name {
-  display: block;
+.procedure-steps,
+.procedure-notes {
+  margin-bottom: 8px;
+}
+
+.procedure-steps .procedure-label,
+.procedure-notes .procedure-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+  margin-bottom: 4px;
+}
+
+.steps-list,
+.notes-list {
+  margin-top: 4px;
+}
+
+.step-item,
+.note-item {
+  font-size: 11px;
+  color: #6b7280;
+  padding: 3px 0;
+  line-height: 1.4;
+}
+
+.procedure-footer {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.procedure-item-inline {
+  font-size: 11px;
+}
+
+.procedure-item-inline .procedure-label {
+  min-width: auto;
+  margin-right: 4px;
 }
 
 .instance-empty {
