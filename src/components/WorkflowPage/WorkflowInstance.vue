@@ -86,11 +86,18 @@
           <div v-if="task.expected_result_type" class="task-info-item">
             <span class="info-label">结果类型:</span>
             <span class="info-value">{{ task.expected_result_type }}</span>
-            <br>
-            <span class="info-label">执行结果:</span>
-            <span class="info-value">{{ task.result }}</span>
           </div>
-          
+          <div v-if="task.result" class="task-result-box">
+            <div class="result-header">
+              <svg class="result-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span class="result-label">执行结果</span>
+            </div>
+            <div class="result-content">
+              {{ task.result }}
+            </div>
+          </div>
           <!-- 执行流程详细信息 -->
           <div v-if="task.execution_procedure" class="execution-procedure">
             <div class="procedure-title">执行流程</div>
@@ -570,5 +577,60 @@ const getStatusText = (status) => {
 .instance-empty p {
   font-size: 18px;
   margin: 0;
+}
+.task-result-box {
+  margin-top: 12px;
+  padding: 12px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-left: 3px solid #3b82f6;
+  border-radius: 8px;
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.result-icon {
+  width: 16px;
+  height: 16px;
+  color: #3b82f6;
+  stroke-width: 2;
+}
+
+.result-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e40af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.result-content {
+  font-size: 13px;
+  color: #1e3a8a;
+  line-height: 1.6;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+/* 已完成任务的结果样式调整 */
+.instance-card-completed .task-result-box {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-left-color: #10b981;
+}
+
+.instance-card-completed .result-icon {
+  color: #10b981;
+}
+
+.instance-card-completed .result-label {
+  color: #065f46;
+}
+
+.instance-card-completed .result-content {
+  color: #064e3b;
 }
 </style>
