@@ -86,6 +86,9 @@
           <div v-if="task.expected_result_type" class="task-info-item">
             <span class="info-label">结果类型:</span>
             <span class="info-value">{{ task.expected_result_type }}</span>
+            <br>
+            <span class="info-label">执行结果:</span>
+            <span class="info-value">{{ task.result }}</span>
           </div>
           
           <!-- 执行流程详细信息 -->
@@ -175,7 +178,8 @@ watch(() => props.workflowData, (newData) => {
         description: subtask.subtask_description,
         expected_result_type: subtask.expected_result_type,
         status: subtask.status === 'yes' ? 'yes' : subtask.status === 'no' ? 'no' : 'pending',
-        execution_procedure: subtask.execution_procedure || null
+        execution_procedure: subtask.execution_procedure || null,
+        result: subtask.result || null
       }))
     }));
     
