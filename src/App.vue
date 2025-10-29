@@ -153,14 +153,10 @@ const parseIntentOutput = (output) => {
 
   const items = [];
   const parsed = JSON.parse(output);
-  if (parsed.primary_intent) {
-    items.push(`${parsed.primary_intent.intent_type}`);
+  for (var i in parsed){
+    items.push(`意图: ${parsed[i].intent_type} \n\n描述: ${parsed[i].description} \n\n关键点: ${parsed[i].key_points}`);
   }
-  if (parsed.secondary_intents){
-    for (var intent of parsed.secondary_intents){
-      items.push(`  ● ${intent.intent_type}`);
-    }
-  }
+
   console.log("[parseIntentOutput] 解析结果:", items);
   return items;
 };
