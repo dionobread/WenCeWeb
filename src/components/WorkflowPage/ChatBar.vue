@@ -57,7 +57,7 @@
     <!-- 底部输入区域 -->
     <div class="input-container">
       
-      <div class="model-selector">
+      <!-- <div class="model-selector">
         <select v-model="selectedModel" class="model-select">
           <option
             v-for="model in availableModels"
@@ -67,7 +67,7 @@
             {{ model.label }}
           </option>
         </select>
-      </div>
+      </div> -->
 
 
       <!-- 输入框和发送按钮 -->
