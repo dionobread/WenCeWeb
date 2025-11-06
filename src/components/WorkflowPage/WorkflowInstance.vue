@@ -3,7 +3,7 @@
     <!-- Workflow 区域 -->
     <div class="workflow-section">
       <div class="section-header">
-        <h2 class="section-title">WorkFlow</h2>
+        <h2 class="section-title">任务向导</h2>
         <span class="section-subtitle">诊疗流程</span>
       </div>
       
@@ -44,10 +44,7 @@
     <!-- Instance 区域 -->
     <div class="instance-section">
       <div class="section-header">
-        <h2 class="section-title">Instance</h2>
-        <span v-if="selectedWorkflow" class="section-subtitle">
-          当前执行: {{ selectedWorkflow.name }}
-        </span>
+        <h2 class="section-title">{{ selectedWorkflow?.name || '请选择工作流' }}状态</h2>
       </div>
       
       <div v-if="selectedWorkflow" class="instance-grid">
@@ -239,7 +236,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 
 const props = defineProps({
   workflowData: {
@@ -250,6 +247,70 @@ const props = defineProps({
 
 const selectedWorkflow = ref(null);
 const workflows = ref([]);
+const autoSwitchTimer = ref(null); // 动切换定时器
+
+// 检查当前workflow是否所有子任务都有result
+const isCurrentWorkflowComplete = () => {
+  if (!selectedWorkflow.value) return false;
+  const workflow = workflows.value.find(wf => wf.id === selectedWorkflow.value.id);
+  if (!workflow) return false;
+  
+  // 所有子任务都有result才算完成
+  return workflow.subTasks.every(task => task.result);
+};
+
+// 查找下一个没有result的任务
+const findNextIncompleteWorkflow = () => {
+  if (workflows.value.length === 0) return null;
+  
+  const currentIndex = selectedWorkflow.value 
+    ? workflows.value.findIndex(wf => wf.id === selectedWorkflow.value.id)
+    : -1;
+  
+  // 从当前任务的下一个开始查找
+  for (let i = 1; i <= workflows.value.length; i++) {
+    const index = (currentIndex + i) % workflows.value.length;
+    const workflow = workflows.value[index];
+    
+    // 检查是否有子任务没有result
+    const hasIncompleteTask = workflow.subTasks.some(task => !task.result);
+    if (hasIncompleteTask) {
+      return workflow;
+    }
+  }
+  
+  return null; // 所有任务都有result了
+};
+
+// 启动自动切换
+const startAutoSwitch = () => {
+  stopAutoSwitch(); // 先清除existing timer
+  
+  autoSwitchTimer.value = setInterval(() => {
+    // 检查当前任务是否完成
+    if (!isCurrentWorkflowComplete()) {
+      console.log('[WorkflowInstance] 当前任务未完成，不切换');
+      return;
+    }
+    
+    const nextWorkflow = findNextIncompleteWorkflow();
+    if (nextWorkflow) {
+      selectedWorkflow.value = nextWorkflow;
+      console.log('[WorkflowInstance] 自动切换到:', nextWorkflow.name);
+    } else {
+      console.log('[WorkflowInstance] 所有任务都已完成，停止自动切换');
+      stopAutoSwitch();
+    }
+  }, 5000);
+};
+
+// 新增：停止自动切换
+const stopAutoSwitch = () => {
+  if (autoSwitchTimer.value) {
+    clearInterval(autoSwitchTimer.value);
+    autoSwitchTimer.value = null;
+  }
+};
 
 // 监听 workflowData 的变化，转换为内部格式
 watch(() => props.workflowData, (newData) => {
@@ -369,6 +430,9 @@ watch(() => props.workflowData, (newData) => {
     } else if (workflows.value.length > 0) {
       selectedWorkflow.value = workflows.value[0];
     }
+    
+    // 新增：数据更新后启动自动切换
+    startAutoSwitch();
   }
 }, { immediate: true, deep: true });
 
@@ -382,11 +446,15 @@ const currentSubTasks = computed(() => {
 // 处理工作流选择
 const handleWorkflowClick = (workflow) => {
   selectedWorkflow.value = workflow;
+  // 新增：手动切换时重启定时器
+  startAutoSwitch();
 };
 
 // 处理显示按钮点击
 const handleDisplay = (workflow) => {
   selectedWorkflow.value = workflow;
+  // 新增：手动切换时重启定时器
+  startAutoSwitch();
 };
 
 // 暴露方法供父组件调用：将所有任务标记为已完成
@@ -409,6 +477,18 @@ const markAllAsCompleted = () => {
   }
 };
 
+// 新增：组件挂载时启动自动切换
+onMounted(() => {
+  if (workflows.value.length > 0) {
+    startAutoSwitch();
+  }
+});
+
+// 新增：组件卸载时清理定时器
+onUnmounted(() => {
+  stopAutoSwitch();
+});
+
 // 暴露方法给父组件
 defineExpose({
   markAllAsCompleted
@@ -425,6 +505,7 @@ const getStatusText = (status) => {
       return '待执行';
   }
 };
+
 const getQueryableText = (status) => {
   switch (status) {
     case true:  
@@ -435,6 +516,7 @@ const getQueryableText = (status) => {
       return '用户输入结果';
   }
 };
+
 const isStructuredResult = (result) => {
   console.log('检查结构化结果:', result);
   return result && typeof result === 'object' && !Array.isArray(result);

@@ -286,6 +286,16 @@ const handleNewMessage = (message) => {
         break;
       }
 
+      case "query_exam_result":
+      case "task_result_saved":  {
+        bottomPanelData.value.Executor.push({
+          tool_output: toolOutput,
+          timestamp: message.timestamp,
+          tool_name: toolName,
+        });
+        break;
+      }
+
       case "request_task_result": {
         // request_task_result 直接显示在 ChatBar，不需要特殊处理
         // ChatBar 会自动显示这类消息
