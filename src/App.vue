@@ -164,23 +164,33 @@ const parseIntentOutput = (output) => {
 // 解析 task_decomposition 的输出
 const parseTaskDecomposition = (output) => {
   try {
-    // 去除 markdown 代码块标记
     let jsonStr = output.trim();
 
-    // 如果包含多个 ### 标题，先提取 JSON 部分
-    if (jsonStr.includes("### 调整后的任务列表") || jsonStr.includes("###")) {
-      // 提取 ```json 到 ``` 之间的内容
-      const jsonMatch = jsonStr.match(/```json\s*([\s\S]*?)\s*```/);
-      if (jsonMatch) {
-        jsonStr = jsonMatch[1].trim();
+    // 提取 ```json 和 ``` 之间的内容（非贪婪模式，只匹配第一个JSON块）
+    const jsonBlockRegex = /```json\s*([\s\S]*?)\s*```/i;
+    const match = jsonStr.match(jsonBlockRegex);
+
+    if (match && match[1]) {
+      jsonStr = match[1].trim();
+    } else {
+      // 如果没有找到json代码块，尝试普通代码块
+      const codeBlockRegex = /```\s*([\s\S]*?)\s*```/;
+      const codeMatch = jsonStr.match(codeBlockRegex);
+      if (codeMatch && codeMatch[1]) {
+        jsonStr = codeMatch[1].trim();
       }
     }
 
-    // 去除可能残留的代码块标记
-    if (jsonStr.startsWith("```json")) {
-      jsonStr = jsonStr.replace(/^```json\n/, "").replace(/\n```$/, "");
-    } else if (jsonStr.startsWith("```")) {
-      jsonStr = jsonStr.replace(/^```\n/, "").replace(/\n```$/, "");
+    // 移除JSON中的单行注释（// 开头的注释）
+    // 注意：这个正则会移除 // 到行尾的所有内容
+    jsonStr = jsonStr.replace(/\/\/.*$/gm, '');
+
+    // 移除多余的逗号（JSON最后一个属性后不能有逗号）
+    jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
+
+    // 验证是否是有效的JSON开头
+    if (!jsonStr.startsWith('{') && !jsonStr.startsWith('[')) {
+      console.warn("[parseTaskDecomposition] 提取的内容可能不是JSON:", jsonStr.substring(0, 100));
     }
 
     const parsed = JSON.parse(jsonStr);
@@ -189,6 +199,13 @@ const parseTaskDecomposition = (output) => {
   } catch (error) {
     console.error("[parseTaskDecomposition] 解析失败:", error);
     console.error("[parseTaskDecomposition] 原始数据:", output);
+    
+    // 尝试提取所有JSON块，看是否有多个
+    const allJsonBlocks = output.match(/```json\s*([\s\S]*?)\s*```/gi);
+    if (allJsonBlocks && allJsonBlocks.length > 1) {
+      console.warn("[parseTaskDecomposition] 检测到多个JSON代码块，尝试解析第一个");
+    }
+    
     return null;
   }
 };

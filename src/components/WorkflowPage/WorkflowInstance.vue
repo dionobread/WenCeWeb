@@ -280,7 +280,7 @@ watch(() => props.workflowData, (newData) => {
       const updatedWorkflows = workflows.value.map(oldWorkflow => {
         // 查找匹配的新 task
         const matchingNewTask = newData.tasks.find(
-          newTask => newTask.task_id === oldWorkflow.id && newTask.task_name === oldWorkflow.name
+          newTask => newTask.task_name === oldWorkflow.name
         );
         
         if (!matchingNewTask) {
@@ -292,7 +292,7 @@ watch(() => props.workflowData, (newData) => {
         // 合并 subtasks
         const mergedSubTasks = oldWorkflow.subTasks.map(oldSubTask => {
           const matchingNewSubTask = (matchingNewTask.subtasks || []).find(
-            newSt => newSt.subtask_id === oldSubTask.id && newSt.subtask_name === oldSubTask.name
+            newSt => newSt.subtask_name === oldSubTask.name
           );
           
           if (!matchingNewSubTask) {
@@ -311,7 +311,7 @@ watch(() => props.workflowData, (newData) => {
         // 添加新增的 subtasks
         const newSubTasks = (matchingNewTask.subtasks || [])
           .filter(newSt => !oldWorkflow.subTasks.some(
-            oldSt => oldSt.id === newSt.subtask_id && oldSt.name === newSt.subtask_name
+            oldSt => oldSt.name === newSt.subtask_name
           ))
           .map(subtask => ({
             id: subtask.subtask_id,
@@ -436,6 +436,7 @@ const getQueryableText = (status) => {
   }
 };
 const isStructuredResult = (result) => {
+  console.log('检查结构化结果:', result);
   return result && typeof result === 'object' && !Array.isArray(result);
 };
 
