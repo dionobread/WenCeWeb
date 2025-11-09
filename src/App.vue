@@ -20,7 +20,7 @@
         <!-- 左侧：两个 Node 水平放置 -->
         <div class="nodes-section">
           <Node
-            title="Intent Extractor"
+            title="用户意图"
             :initial-items="intentExtractorItems"
             @update="updateIntentExtractor"
             @details="showNodeDetails"
@@ -29,7 +29,7 @@
           />
 
           <Node
-            title="Task Decomposition"
+            title="任务分解"
             :initial-items="taskDecompositionItems"
             @update="updateTaskDecomposition"
             @details="showNodeDetails"

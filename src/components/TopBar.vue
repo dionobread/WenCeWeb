@@ -1,6 +1,6 @@
 <template>
   <header class="topbar">
-    <div class="brand">WenCePlatform</div>
+    <div class="brand">问策就医全流程辅助系统</div>
   </header>
 </template>
 

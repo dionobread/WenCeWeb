@@ -1,5 +1,43 @@
 <template>
-  <div class="bottom-panel-container">
+  <div 
+    class="bottom-panel-container" 
+    :class="{ collapsed: isCollapsed }"
+    :style="{ height: containerHeight }"
+  >
+    <!-- 面板头部 -->
+    <div class="panel-header">
+      <div class="panel-title">控制台面板</div>
+      <div class="panel-controls">
+        <!-- 伸缩手柄 -->
+        <div 
+          v-if="!isCollapsed" 
+          class="resize-handle"
+          @mousedown="startResize"
+          title="拖动调整高度"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M7,15H9V9H7M11,15H13V9H11M15,15H17V9H15M7,19H17V21H7V19Z" />
+          </svg>
+        </div>
+        <!-- 折叠按钮 -->
+        <button 
+          class="collapse-btn"
+          @click="toggleCollapse"
+          :title="isCollapsed ? '展开面板' : '折叠面板'"
+        >
+          <svg 
+            width="16" 
+            height="16" 
+            viewBox="0 0 24 24" 
+            fill="currentColor"
+            :style="{ transform: isCollapsed ? 'rotate(180deg)' : 'none' }"
+          >
+            <path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+    
     <!-- 底部标签栏 -->
     <div class="bottom-tabbar">
       <div
@@ -14,7 +52,10 @@
     </div>
 
     <!-- 底部内容面板 -->
-    <div class="content-panel">
+    <div 
+      class="content-panel" 
+      :style="{ height: panelHeight + 'px' }"
+    >
       <div v-if="currentData && currentData.length > 0" class="json-display">
         <div
           v-for="(item, index) in currentData"
@@ -53,20 +94,30 @@ const props = defineProps({
 
 const emit = defineEmits(['tab-change']);
 
-const activeTab = ref('Overview');
+const activeTab = ref('总览');
+const isCollapsed = ref(false);
+const panelHeight = ref(200);
+const isResizing = ref(false);
 
 const tabs = [
-  'Overview',
-  'Intent',
-  'Decomposer',
-  'Planner',
-  'Executor',
-  'Synthesizer',
-  'User Proxy'
+  '总览',
+  '意图理解',
+  '任务分解',
+  '任务规划',
+  '任务执行',
+  '总结',
+  '用户输入'
 ];
 
 const currentData = computed(() => {
   return props.bottomPanelData[activeTab.value] || [];
+});
+
+const containerHeight = computed(() => {
+  if (isCollapsed.value) {
+    return '40px'; // 只显示标签栏的高度
+  }
+  return (40 + panelHeight.value) + 'px'; // 标签栏高度 + 内容面板高度
 });
 
 const formatTime = (timestamp) => {
@@ -133,6 +184,36 @@ const handleTabClick = (tab) => {
   activeTab.value = tab;
   emit('tab-change', tab);
 };
+
+const toggleCollapse = () => {
+  isCollapsed.value = !isCollapsed.value;
+};
+
+const startResize = (e) => {
+  isResizing.value = true;
+  const startY = e.clientY;
+  const startHeight = panelHeight.value;
+  
+  const doResize = (moveEvent) => {
+    if (!isResizing.value) return;
+    
+    const deltaY = startY - moveEvent.clientY;
+    let newHeight = startHeight + deltaY;
+    
+    // 限制高度范围
+    newHeight = Math.max(100, Math.min(500, newHeight));
+    panelHeight.value = newHeight;
+  };
+  
+  const stopResize = () => {
+    isResizing.value = false;
+    document.removeEventListener('mousemove', doResize);
+    document.removeEventListener('mouseup', stopResize);
+  };
+  
+  document.addEventListener('mousemove', doResize);
+  document.addEventListener('mouseup', stopResize);
+};
 </script>
 
 <style scoped>
@@ -144,12 +225,64 @@ const handleTabClick = (tab) => {
   display: flex;
   flex-direction: column;
   z-index: 99;
+  background-color: white;
+  border-top: 1px solid #e0e0e0;
+  transition: height 0.3s ease;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.panel-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.resize-handle {
+  width: 16px;
+  height: 16px;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+}
+
+.collapse-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+  transition: all 0.2s ease;
+}
+
+.collapse-btn:hover {
+  background-color: #e9ecef;
+  color: #495057;
 }
 
 .bottom-tabbar {
   height: 40px;
   background-color: #ffffff;
-  border-top: 1px solid #e0e0e0;
   display: flex;
 }
 
@@ -187,7 +320,6 @@ const handleTabClick = (tab) => {
 }
 
 .content-panel {
-  height: 200px;
   background-color: #f3f0ff;
   color: #1a1a1a;
   overflow: auto;
@@ -195,6 +327,7 @@ const handleTabClick = (tab) => {
   font-family: 'Courier New', Courier, monospace;
   font-size: 13px;
   line-height: 20px;
+  transition: height 0.3s ease;
 }
 
 .json-display {
@@ -262,5 +395,16 @@ const handleTabClick = (tab) => {
 
 .content-panel::-webkit-scrollbar-thumb:hover {
   background: #a78bfa;
+}
+
+/* 折叠状态 */
+.bottom-panel-container.collapsed .content-panel {
+  height: 0 !important;
+  padding: 0;
+  overflow: hidden;
+}
+
+.collapsed .resize-handle {
+  display: none;
 }
 </style>
