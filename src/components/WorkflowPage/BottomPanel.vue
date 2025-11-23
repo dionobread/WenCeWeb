@@ -91,6 +91,15 @@ const props = defineProps({
     required: true
   }
 });
+const tabKeyMap = {
+  '总览': 'Overview',
+  '意图理解': 'Intent',
+  '任务分解': 'Decomposer',
+  '任务规划': 'Planner',
+  '任务执行': 'Executor',
+  '总结': 'Synthesizer',
+  '用户输入': 'User Proxy'
+};
 
 const emit = defineEmits(['tab-change']);
 
@@ -110,7 +119,8 @@ const tabs = [
 ];
 
 const currentData = computed(() => {
-  return props.bottomPanelData[activeTab.value] || [];
+  const key = tabKeyMap[activeTab.value];
+  return props.bottomPanelData[key] || [];
 });
 
 const containerHeight = computed(() => {

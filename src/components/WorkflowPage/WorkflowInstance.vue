@@ -301,7 +301,7 @@ const startAutoSwitch = () => {
       console.log('[WorkflowInstance] 所有任务都已完成，停止自动切换');
       stopAutoSwitch();
     }
-  }, 5000);
+  }, 7000);
 };
 
 // 新增：停止自动切换
